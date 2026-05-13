@@ -1,12 +1,16 @@
-#include "esp_camera.h"
+
+#include "esp_camerah"
+#include "esp_wpa2.h"
 #include <WiFi.h>
 
 #define CAMERA_MODEL_XIAO_ESP32S3 // Has PSRAM
 
 #include "camera_pins.h"
 
-const char* ssid = "**********";
-const char* password = "**********";
+const char* ssid = "eduroam";
+#define EAP_IDENTITY "yourNetID@ucr.edu"
+#define EAP_USERNAME "yourNetID@ucr.edu"
+#define EAP_PASSWORD "yourCampusPassword"
 
 void startCameraServer();
 void setupLedFlash(int pin);
@@ -89,7 +93,14 @@ void setup() {
   setupLedFlash(LED_GPIO_NUM);
 #endif
 
-  WiFi.begin(ssid, password);
+  WiFi.mode(WIFI_STA);
+
+  esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)EAP_IDENTITY, strlen(EAP_IDENTITY));
+  esp_wifi_sta_wpa2_ent_set_username((uint8_t *)EAP_USERNAME, strlen(EAP_USERNAME));
+  esp_wifi_sta_wpa2_ent_set_password((uint8_t *)EAP_PASSWORD, strlen(EAP_PASSWORD));
+  esp_wifi_sta_wpa2_ent_enable();
+
+  WiFi.begin(ssid);
   WiFi.setSleep(false);
 
   while (WiFi.status() != WL_CONNECTED) {
