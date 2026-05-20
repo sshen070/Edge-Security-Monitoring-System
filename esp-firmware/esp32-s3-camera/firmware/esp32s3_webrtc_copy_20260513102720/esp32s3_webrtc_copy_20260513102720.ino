@@ -1,16 +1,27 @@
 
-#include "esp_camerah"
+/*
+  ESP32-S3 Camera quick access:
+    Portal/settings: http://<ip>/portal
+    Raw still JPEG:  http://<ip>/capture
+    Raw live stream: http://<ip>:81/stream
+
+  Read README.md in this sketch folder for URL settings, headers, presets,
+  and the reason the live stream uses port 81.
+*/
+
+#include "esp_camera.h"
 #include "esp_wpa2.h"
 #include <WiFi.h>
 
 #define CAMERA_MODEL_XIAO_ESP32S3 // Has PSRAM
 
 #include "camera_pins.h"
+#include "camera_presets.h"
 
-const char* ssid = "eduroam";
-#define EAP_IDENTITY "yourNetID@ucr.edu"
-#define EAP_USERNAME "yourNetID@ucr.edu"
-#define EAP_PASSWORD "yourCampusPassword"
+#include "secrets.h"
+
+const char* ssid = "hikaruiPhone";
+const char* password = "password";
 
 void startCameraServer();
 void setupLedFlash(int pin);
@@ -42,8 +53,7 @@ void setup() {
   config.pin_reset = RESET_GPIO_NUM;
   config.xclk_freq_hz = 20000000;
   config.frame_size = FRAMESIZE_UXGA;
-  config.pixel_format = PIXFORMAT_JPEG; // for streaming
-  //config.pixel_format = PIXFORMAT_RGB565; // for face detection/recognition
+  config.pixel_format = PIXFORMAT_JPEG;
   config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
   config.fb_location = CAMERA_FB_IN_PSRAM;
   config.jpeg_quality = 12;
@@ -62,7 +72,6 @@ void setup() {
       config.fb_location = CAMERA_FB_IN_DRAM;
     }
   } else {
-    // Best option for face detection/recognition
     config.frame_size = FRAMESIZE_240X240;
 #if CONFIG_IDF_TARGET_ESP32S3
     config.fb_count = 2;
@@ -77,16 +86,13 @@ void setup() {
   }
 
   sensor_t * s = esp_camera_sensor_get();
-  // initial sensors are flipped vertically and colors are a bit saturated
+  // Initial sensors are flipped vertically and colors are a bit saturated.
   if (s->id.PID == OV3660_PID) {
     s->set_vflip(s, 1); // flip it back
     s->set_brightness(s, 1); // up the brightness just a bit
     s->set_saturation(s, -2); // lower the saturation
   }
-  // drop down frame size for higher initial frame rate
-  if(config.pixel_format == PIXFORMAT_JPEG){
-    s->set_framesize(s, FRAMESIZE_QVGA);
-  }
+  applyCameraFeedPreset(s);
 
 // Setup LED FLash if LED pin is defined in camera_pins.h
 #if defined(LED_GPIO_NUM)
@@ -95,20 +101,34 @@ void setup() {
 
   WiFi.mode(WIFI_STA);
 
-  esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)EAP_IDENTITY, strlen(EAP_IDENTITY));
-  esp_wifi_sta_wpa2_ent_set_username((uint8_t *)EAP_USERNAME, strlen(EAP_USERNAME));
-  esp_wifi_sta_wpa2_ent_set_password((uint8_t *)EAP_PASSWORD, strlen(EAP_PASSWORD));
-  esp_wifi_sta_wpa2_ent_enable();
+  // esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)EAP_IDENTITY, strlen(EAP_IDENTITY));
+  // esp_wifi_sta_wpa2_ent_set_username((uint8_t *)EAP_USERNAME, strlen(EAP_USERNAME));
+  // esp_wifi_sta_wpa2_ent_set_password((uint8_t *)EAP_PASSWORD, strlen(EAP_PASSWORD));
+  // esp_wifi_sta_wpa2_ent_enable();
 
-  WiFi.begin(ssid);
+  WiFi.begin(ssid, password);
   WiFi.setSleep(false);
 
-  while (WiFi.status() != WL_CONNECTED) {
+  int attempts = 0;
+
+  while (WiFi.status() != WL_CONNECTED && attempts < 60) {
     delay(500);
     Serial.print(".");
+    attempts++;
   }
-  Serial.println("");
-  Serial.println("WiFi connected");
+
+  Serial.println();
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("WiFi connected");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("WiFi failed to connect");
+    Serial.print("WiFi status: ");
+    Serial.println(WiFi.status());
+    return;
+  }
 
   startCameraServer();
 
