@@ -4,14 +4,31 @@
   Fill HOTSPOT_SSID and HOTSPOT_PASSWORD, flash the sketch, then open Serial
   Monitor at 115200 baud. The board scans nearby networks, connects to the
   hotspot, and prints IP/RSSI status.
+
+  Program internally wraps in the following order.
+
+    boot → setup() → connect Wi-Fi → connect MQTT → enter loop()
+  
 */
 
 #include <WiFi.h>
+#include <PubSubClient.h>
 
+// Connenct ESP32-C3 to hotspot
 const char *HOTSPOT_SSID = "yourHotspotName";
 const char *HOTSPOT_PASSWORD = "yourHotspotPassword";
 
+// Connnect ESP32-C3 to server (jetson nano)
+const char *MQTT_SERVER = "x.x.x.x"; // Replace with jetson IP
+const char *MQTT_TOPIC = "sensors/esp32c3";
+
+// Client object
+WiFiClient espClient;
+PubSubClient mqttClient(espClient);
+
 const uint32_t CONNECT_TIMEOUT_MS = 30000;
+
+uint32_t lastPublish = 0;
 
 static const char *wifiStatusName(wl_status_t status) {
   switch (status) {
@@ -76,34 +93,65 @@ static bool connectHotspot() {
   WiFi.begin(HOTSPOT_SSID, HOTSPOT_PASSWORD);
 
   uint32_t started = millis();
+
   wl_status_t lastStatus = WL_IDLE_STATUS;
+
+  // Connection only remains for CONNECT_TIMEOUT_MS
   while (millis() - started < CONNECT_TIMEOUT_MS) {
     wl_status_t status = WiFi.status();
+
     if (status != lastStatus) {
-      Serial.printf("Wi-Fi status: %s (%d)\n", wifiStatusName(status), status);
-      lastStatus = status;
+        Serial.printf("Wi-Fi status: %s (%d)\n", wifiStatusName(status), status);
+        lastStatus = status;
     }
+
     if (status == WL_CONNECTED) {
-      Serial.println();
-      Serial.println("Connected to hotspot.");
-      Serial.print("IP address: ");
+      Serial.println("Wi-Fi connected");
       Serial.println(WiFi.localIP());
-      Serial.print("Gateway: ");
-      Serial.println(WiFi.gatewayIP());
-      Serial.print("DNS: ");
-      Serial.println(WiFi.dnsIP());
-      Serial.print("RSSI: ");
-      Serial.println(WiFi.RSSI());
+
+      // Serial.println();
+      // Serial.println("Connected to hotspot.");
+      // Serial.print("IP address: ");
+      // Serial.println(WiFi.localIP());
+      // Serial.print("Gateway: ");
+      // Serial.println(WiFi.gatewayIP());
+      // // Serial.print("DNS: ");
+      // // Serial.println(WiFi.dnsIP());
+      // Serial.print("RSSI: ");
+      // Serial.println(WiFi.RSSI());
       return true;
     }
+
     Serial.print(".");
     delay(500);
   }
 
-  Serial.println();
-  Serial.println("Connection timed out.");
+  Serial.println("\nConnection timed out.");
   Serial.printf("Final Wi-Fi status: %s (%d)\n", wifiStatusName(WiFi.status()), WiFi.status());
   return false;
+}
+
+void connectMQTT() {
+  while (!mqttClient.connected()) {    
+    // Use mac address as clientID
+    String mac = WiFi.macAddress();
+    mac.replace(":", "");
+    String clientId = "ESP32C3-" + mac;    
+    
+    Serial.println("Connecting to MQTT...");
+
+    if (mqttClient.connect(clientId.c_str())) {
+      Serial.println("MQTT connected.");
+    } 
+    
+    else {
+      Serial.print("MQTT failed, rc=");
+      Serial.print(mqttClient.state());
+      Serial.println(" retrying...");
+
+      delay(2000);
+    }
+  }
 }
 
 void setup() {
@@ -112,27 +160,51 @@ void setup() {
   Serial.println();
   Serial.println("ESP32-C3 hotspot Wi-Fi test");
 
-  bool connected = connectHotspot();
-  if (!connected) {
-    Serial.println();
-    Serial.println("Check that:");
-    Serial.println("  - The hotspot is 2.4 GHz or compatibility mode is enabled.");
-    Serial.println("  - SSID/password are exact.");
-    Serial.println("  - The hotspot allows new devices.");
-    Serial.println("  - The ESP32-C3 MAC is not blocked by the hotspot.");
+  // If connection fails & attempt connection again
+  while (!connectHotspot()) {
+    Serial.println("Retry Wi-Fi...");
   }
+
+  mqttClient.setServer(MQTT_SERVER, 1883);
+  connectMQTT();
 }
 
 void loop() {
-  static uint32_t lastPrint = 0;
-  if (millis() - lastPrint >= 5000) {
-    lastPrint = millis();
-    Serial.printf(
-      "Status: %s (%d), IP: %s, RSSI: %d\n",
-      wifiStatusName(WiFi.status()),
-      WiFi.status(),
-      WiFi.localIP().toString().c_str(),
-      WiFi.RSSI()
-    );
+  // In case connection fails after setup
+  if (WiFi.status() != WL_CONNECTED) {
+    connectHotspot();
+    mqttClient.disconnect();
+    delay(500);  
+  }
+
+  if (!mqttClient.connected()) {
+    connectMQTT();
+  }
+
+  mqttClient.loop();
+
+  // Publish every 5 seconds
+  if (millis() - lastPublish > 5000) {
+    lastPublish = millis();
+
+    // Temporary Simulation
+    float temperature = random(200, 350) / 10.0;
+    int motion = random(0, 2);
+    int lightLevel = random(0, 1024);
+
+    String payload = "{";
+    payload += "\"temperature\":" + String(temperature, 1) + ",";
+    payload += "\"motion\":" + String(motion) + ",";
+    payload += "\"light\":" + String(lightLevel) + ",";
+    payload += "\"rssi\":" + String(WiFi.RSSI());
+    payload += "}";
+
+    Serial.println("Publishing:");
+    Serial.println(payload);
+
+    bool publish = mqttClient.publish(MQTT_TOPIC, payload.c_str());
+    if (!publish) {
+      Serial.println("MQTT publish failed");
+    }  
   }
 }
