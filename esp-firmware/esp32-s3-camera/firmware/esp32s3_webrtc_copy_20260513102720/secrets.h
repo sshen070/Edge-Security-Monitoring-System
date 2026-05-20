@@ -1,4 +1,6 @@
-// secrets.h
-#define EAP_IDENTITY "hshim023@ucr.edu"
-#define EAP_USERNAME "hshim023@ucr.edu"
-#define EAP_PASSWORD "YOUR_PASSWORD_HERE"
+#pragma once
+
+// Local Wi-Fi credentials for the camera firmware.
+// Replace these placeholders before flashing. Do not commit real credentials.
+const char *WIFI_SSID = "yourWifiName";
+const char *WIFI_PASSWORD = "yourWifiPassword";

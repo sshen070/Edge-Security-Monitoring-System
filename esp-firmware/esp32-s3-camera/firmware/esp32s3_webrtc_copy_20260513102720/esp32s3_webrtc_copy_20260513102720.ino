@@ -20,9 +20,6 @@
 
 #include "secrets.h"
 
-const char* ssid = "hikaruiPhone";
-const char* password = "password";
-
 void startCameraServer();
 void setupLedFlash(int pin);
 
@@ -106,7 +103,7 @@ void setup() {
   // esp_wifi_sta_wpa2_ent_set_password((uint8_t *)EAP_PASSWORD, strlen(EAP_PASSWORD));
   // esp_wifi_sta_wpa2_ent_enable();
 
-  WiFi.begin(ssid, password);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   WiFi.setSleep(false);
 
   int attempts = 0;
