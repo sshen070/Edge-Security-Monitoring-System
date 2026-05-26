@@ -12,6 +12,43 @@ The Jetson Orin Nano hosts the ESP-only WiFi network on its USB WiFi dongle, the
 4. Verify devices through `/api/devices`.
 5. Use `/api/cameras/...` and `/api/sensors/...` from dashboards or backend services.
 
+## One-Command Jetson Setup
+
+From the repo root on the Jetson Orin Nano:
+
+```sh
+AP_PASSWORD='change-this-password' ./jetson-device-gateway/scripts/setup_jetson_orin.sh
+```
+
+If you know the USB WiFi interface name:
+
+```sh
+AP_IFACE=wlx503eaace2bc7 AP_PASSWORD='change-this-password' ./jetson-device-gateway/scripts/setup_jetson_orin.sh
+```
+
+The script:
+
+- installs Jetson build/header packages
+- installs the Realtek USB WiFi driver using `aircrack-ng/rtl8812au`
+- creates or updates NetworkManager `Hotspot`
+- assigns `10.42.0.1/24`
+- starts `docker-compose.jetson.yml`
+- prints API checks
+
+Configurable environment variables:
+
+```text
+AP_SSID=ESP-NET
+AP_PASSWORD=change-this-password
+AP_IFACE=<auto-detected disconnected WiFi interface>
+AP_IP=10.42.0.1
+AP_CIDR=10.42.0.1/24
+INSTALL_REALTEK_DRIVER=1
+REALTEK_DRIVER_SOURCE=aircrack
+```
+
+Set `INSTALL_REALTEK_DRIVER=0` if the dongle driver is already working.
+
 ## Run Locally
 
 ```sh

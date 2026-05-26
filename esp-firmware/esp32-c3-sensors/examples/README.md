@@ -1,6 +1,6 @@
 # Jetson ESP32-C3 Demo Sketches
 
-These examples target Seeed XIAO ESP32-C3 boards plugged into the XIAO expansion board with Grove sensors.
+These examples target Seeed XIAO ESP32-C3 boards. Start with the register test, then move to Grove sensor/output demos.
 
 All three sketches connect to the Jetson Orin Nano private ESP WiFi network:
 
@@ -17,6 +17,29 @@ const char *WIFI_PASSWORD = "change-this-password";
 ```
 
 ## Examples
+
+### Register Test
+
+Path:
+
+```text
+esp-firmware/esp32-c3-sensors/examples/jetson_register_test/jetson_register_test.ino
+```
+
+Use this first. It needs no Grove sensors. It connects to `ESP-NET`, registers with the Jetson device gateway, and posts a small test reading every 5 seconds.
+
+Registers as:
+
+```text
+c3-register-test-01
+```
+
+Jetson checks:
+
+```sh
+curl http://10.42.0.1:8080/api/devices
+curl http://10.42.0.1:8080/api/sensors/c3-register-test-01/latest
+```
 
 ### Sensor Node
 
@@ -120,3 +143,14 @@ Serial Monitor: 115200 baud
 ```
 
 These examples intentionally do not use the XIAO ESP32S3 Sense camera/mic. The C3 boards are for Grove sensors, simple outputs, WiFi registration, and small local HTTP tools.
+
+## Jetson Flash Helper
+
+From the repo root on the Jetson:
+
+```bash
+./esp-firmware/scripts/flash_esp.sh c3-register-test
+MONITOR=1 ./esp-firmware/scripts/flash_esp.sh c3-register-test
+```
+
+Use `PORT=/dev/ttyACM0` if multiple ESP boards are plugged in.

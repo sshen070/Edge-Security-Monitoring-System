@@ -79,6 +79,16 @@ The exact names may differ. Use the USB dongle interface for the AP commands bel
 
 ### 2. Start ESP-NET
 
+Recommended scripted setup from the repo root:
+
+```sh
+AP_IFACE=wlx503eaace2bc7 AP_PASSWORD='change-this-password' ./jetson-device-gateway/scripts/setup_jetson_orin.sh
+```
+
+The script installs the Realtek USB WiFi driver, creates the NetworkManager hotspot, sets `10.42.0.1/24`, and starts the device gateway.
+
+Manual setup:
+
 First try NetworkManager hotspot mode:
 
 ```sh

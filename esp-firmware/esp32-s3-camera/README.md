@@ -36,3 +36,19 @@ firmware/camera_stream_portal/README.md
 
 - [School WiFi test](./examples/school_wifi_test/README.md)
 - [Stream format](./stream-format.md)
+
+## Flash From Jetson
+
+From the repo root on the Jetson:
+
+```bash
+BOARD=s3-camera ./esp-firmware/scripts/flash_esp.sh
+```
+
+Diagnostic school WiFi sketch:
+
+```bash
+BOARD=s3-school-wifi-test ./esp-firmware/scripts/flash_esp.sh
+```
+
+Set `PORT=/dev/ttyACM0` if multiple ESP boards are connected.

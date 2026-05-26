@@ -3,496 +3,584 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>IoT Cloud Dashboard</title>
+  <title>Jetson ESP Device Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * {
       box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
     }
 
     body {
-      background: #f4f6f8;
-      color: #1f2937;
+      margin: 0;
+      background: #f6f7f9;
+      color: #172033;
+      font-family: Arial, sans-serif;
     }
 
     header {
-      background: #111827;
-      color: white;
-      padding: 18px 28px;
+      background: #18212f;
+      color: #ffffff;
+      padding: 18px 24px;
     }
 
     header h1 {
-      font-size: 24px;
-      margin-bottom: 4px;
+      margin: 0 0 4px;
+      font-size: 22px;
+      font-weight: 700;
     }
 
     header p {
-      color: #cbd5e1;
+      margin: 0;
+      color: #c8d1df;
       font-size: 14px;
     }
 
-    .container {
-      padding: 24px;
+    main {
       display: grid;
-      gap: 20px;
-    }
-
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 16px;
-    }
-
-    .card {
-      background: white;
-      border-radius: 12px;
       padding: 18px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
-    .card h2 {
-      font-size: 18px;
-      margin-bottom: 12px;
+    .toolbar,
+    .card {
+      background: #ffffff;
+      border: 1px solid #dfe3ea;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(10, 20, 30, 0.06);
     }
 
-    .stat {
-      font-size: 30px;
-      font-weight: bold;
-      margin-bottom: 6px;
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 10px;
+      align-items: end;
+      padding: 14px;
     }
 
-    .label {
-      color: #6b7280;
+    label {
+      display: grid;
+      gap: 6px;
+      color: #526071;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input,
+    select,
+    button {
+      min-height: 38px;
+      border-radius: 6px;
       font-size: 14px;
     }
 
-    .main-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 20px;
-    }
-
-    .chart-box {
-      height: 320px;
-    }
-
-    .status-list,
-    .alert-list {
-      display: grid;
-      gap: 12px;
-    }
-
-    .status-item,
-    .alert-item {
-      border: 1px solid #e5e7eb;
-      border-radius: 10px;
-      padding: 12px;
-      background: #fafafa;
-    }
-
-    .status-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-
-    .badge {
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .online {
-      background: #dcfce7;
-      color: #166534;
-    }
-
-    .warning {
-      background: #fef3c7;
-      color: #92400e;
-    }
-
-    .offline {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-
-    .alert-high {
-      border-left: 5px solid #dc2626;
-    }
-
-    .alert-medium {
-      border-left: 5px solid #f59e0b;
-    }
-
-    .alert-low {
-      border-left: 5px solid #2563eb;
-    }
-
-    .camera-preview {
-      background: #111827;
-      color: #e5e7eb;
-      border-radius: 12px;
-      height: 240px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      margin-top: 12px;
+    input,
+    select {
+      width: 100%;
+      border: 1px solid #cbd3df;
+      padding: 8px 10px;
+      color: #172033;
+      background: #ffffff;
     }
 
     button {
-      border: none;
-      border-radius: 8px;
-      padding: 10px 14px;
-      background: #2563eb;
-      color: white;
+      border: 0;
+      padding: 8px 13px;
+      background: #2264d1;
+      color: #ffffff;
       cursor: pointer;
-      font-weight: bold;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    button.secondary {
+      background: #eef2f7;
+      color: #263445;
+      border: 1px solid #cbd3df;
+    }
+
+    .summary-grid,
+    .main-grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .summary-grid {
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+    }
+
+    .main-grid {
+      grid-template-columns: minmax(0, 1.35fr) minmax(340px, 0.65fr);
+      align-items: start;
+    }
+
+    .card {
+      padding: 14px;
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+    }
+
+    .stat {
+      margin-bottom: 4px;
+      font-size: 30px;
+      font-weight: 800;
+    }
+
+    .label,
+    .muted {
+      color: #667385;
+      font-size: 13px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .online {
+      background: #dff7e8;
+      color: #17643a;
+    }
+
+    .stale {
+      background: #fff1d6;
+      color: #8a5700;
+    }
+
+    .offline {
+      background: #ffe2e2;
+      color: #9b1c1c;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #e5e9f0;
+      padding: 9px 8px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: #526071;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .camera-frame {
+      overflow: hidden;
+      min-height: 260px;
+      background: #111827;
+      border: 1px solid #202a39;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .camera-frame img {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 520px;
+      object-fit: contain;
+    }
+
+    .camera-empty {
+      padding: 26px;
+      color: #cbd5e1;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .camera-actions {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .chart-box {
+      height: 300px;
+    }
+
+    .sensor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
       margin-top: 12px;
     }
 
-    button:hover {
-      background: #1d4ed8;
+    .reading {
+      border: 1px solid #e5e9f0;
+      border-radius: 7px;
+      padding: 10px;
+      background: #fafbfc;
+    }
+
+    .reading strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+
+    .error {
+      color: #a52121;
     }
 
     @media (max-width: 900px) {
-      .main-grid {
+      .toolbar,
+      .main-grid,
+      .camera-actions {
         grid-template-columns: 1fr;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>IoT Cloud Dashboard</h1>
-    <p>Remote monitoring dashboard for ESP32-C6 sensors, ESP32-S3 camera, Jetson Orin Nano edge processing, and cloud alerts.</p>
+    <h1>Jetson ESP Device Dashboard</h1>
+    <p>Live C3 sensor readings and S3 camera feeds through the Jetson device gateway.</p>
   </header>
 
-  <main class="container">
+  <main>
+    <section class="toolbar">
+      <label>
+        Jetson Gateway API
+        <input id="apiBase" placeholder="http://10.13.x.x:8080" />
+      </label>
+      <button id="saveApi">Connect</button>
+      <button class="secondary" id="refreshNow">Refresh</button>
+    </section>
+
     <section class="summary-grid">
       <div class="card">
-        <div class="stat" id="activeDevices">5</div>
-        <div class="label">Active devices</div>
+        <div class="stat" id="deviceCount">0</div>
+        <div class="label">Registered devices</div>
       </div>
       <div class="card">
-        <div class="stat" id="motionEvents">12</div>
-        <div class="label">Motion events today</div>
+        <div class="stat" id="sensorCount">0</div>
+        <div class="label">Sensor feeds</div>
       </div>
       <div class="card">
-        <div class="stat" id="doorEvents">7</div>
-        <div class="label">Door activity events today</div>
+        <div class="stat" id="cameraCount">0</div>
+        <div class="label">Camera feeds</div>
       </div>
       <div class="card">
-        <div class="stat" id="alertsToday">3</div>
-        <div class="label">Alerts today</div>
+        <div class="stat" id="motionState">0</div>
+        <div class="label">Motion-active sensors</div>
       </div>
     </section>
 
     <section class="main-grid">
       <div class="card">
-        <h2>Sensor Charts</h2>
-        <p class="label">Sample processed event data received from the backend API.</p>
+        <h2>Sensor Trend</h2>
         <div class="chart-box">
           <canvas id="sensorChart"></canvas>
         </div>
+        <div class="sensor-grid" id="sensorCards"></div>
       </div>
 
       <div class="card">
-        <h2>Camera Preview</h2>
-        <p class="label">ESP32-S3 camera stream status through Wi-Fi/WebRTC.</p>
-        <div class="camera-preview" id="cameraPreview">
-          ESP32-S3 Camera Stream<br />Status: Connected
+        <h2>Camera Stream</h2>
+        <div class="camera-actions">
+          <select id="cameraSelect" aria-label="Camera"></select>
+          <button id="openCapture">Capture JPEG</button>
         </div>
-        <button onclick="simulateCameraStatus()">Toggle Camera Status</button>
+        <div class="camera-frame" id="cameraFrame">
+          <div class="camera-empty">No camera selected.</div>
+        </div>
       </div>
     </section>
 
-    <section class="main-grid">
-      <div class="card">
-        <h2>Camera and Device Status</h2>
-        <div class="status-list" id="deviceStatusList"></div>
+    <section class="card">
+      <h2>Devices</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Device</th>
+              <th>Type</th>
+              <th>IP</th>
+              <th>Capabilities</th>
+              <th>Last Seen</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="deviceRows"></tbody>
+        </table>
       </div>
-
-      <div class="card">
-        <h2>Alert Display</h2>
-        <div class="alert-list" id="alertList"></div>
-        <button onclick="addRandomAlert()">Simulate New Alert</button>
-      </div>
+      <p class="muted" id="lastUpdated">Not connected.</p>
+      <p class="muted error" id="errorText"></p>
     </section>
   </main>
 
   <script>
-    const API_BASE_URL = "http://127.0.0.1:8000/v1";
+    const params = new URLSearchParams(window.location.search);
+    const savedApi = localStorage.getItem("jetsonGatewayApi");
+    const defaultApi = window.location.protocol.startsWith("http")
+      ? `${window.location.protocol}//${window.location.hostname}:8080`
+      : "http://127.0.0.1:8080";
+    const state = {
+      apiBase: params.get("api") || savedApi || defaultApi,
+      devices: [],
+      sensors: [],
+      cameras: [],
+      chart: null,
+      selectedCamera: "",
+      currentStreamUrl: ""
+    };
 
-    const devices = [
-      {
-        name: "NVIDIA Jetson Orin Nano",
-        type: "Edge Device",
-        task: "Processes sensor and camera data locally",
-        communication: "Wi-Fi / Local Network",
-        status: "Online"
-      },
-      {
-        name: "ESP32-C6 Sensor Node 1",
-        type: "IoT Sensor",
-        task: "Detects door activity and motion",
-        communication: "Zigbee",
-        status: "Online"
-      },
-      {
-        name: "ESP32-C6 Sensor Node 2",
-        type: "IoT Sensor",
-        task: "Detects door activity and motion",
-        communication: "Zigbee",
-        status: "Online"
-      },
-      {
-        name: "ESP32-C6 Sensor Node 3",
-        type: "IoT Sensor",
-        task: "Detects door activity and motion",
-        communication: "Zigbee",
-        status: "Warning"
-      },
-      {
-        name: "ESP32-S3 Camera Module",
-        type: "IoT Camera",
-        task: "Captures image and video data",
-        communication: "Wi-Fi / WebRTC",
-        status: "Online"
-      }
-    ];
+    const els = {
+      apiBase: document.getElementById("apiBase"),
+      saveApi: document.getElementById("saveApi"),
+      refreshNow: document.getElementById("refreshNow"),
+      deviceCount: document.getElementById("deviceCount"),
+      sensorCount: document.getElementById("sensorCount"),
+      cameraCount: document.getElementById("cameraCount"),
+      motionState: document.getElementById("motionState"),
+      sensorCards: document.getElementById("sensorCards"),
+      cameraSelect: document.getElementById("cameraSelect"),
+      openCapture: document.getElementById("openCapture"),
+      cameraFrame: document.getElementById("cameraFrame"),
+      deviceRows: document.getElementById("deviceRows"),
+      lastUpdated: document.getElementById("lastUpdated"),
+      errorText: document.getElementById("errorText")
+    };
 
-    const alerts = [
-      {
-        level: "High",
-        message: "Motion detected near main entry camera.",
-        source: "ESP32-S3 Camera Module",
-        time: "10:42 AM"
-      },
-      {
-        level: "Medium",
-        message: "Door activity detected by sensor node 2.",
-        source: "ESP32-C6 Sensor Node 2",
-        time: "10:18 AM"
-      },
-      {
-        level: "Low",
-        message: "Sensor node 3 signal strength is lower than normal.",
-        source: "ESP32-C6 Sensor Node 3",
-        time: "9:55 AM"
-      }
-    ];
+    els.apiBase.value = state.apiBase;
 
-    function getStatusClass(status) {
-      if (status === "Online") return "online";
-      if (status === "Warning") return "warning";
-      return "offline";
+    function cleanApiBase(value) {
+      return value.trim().replace(/\/+$/, "");
     }
 
-    function renderDeviceStatus() {
-      const list = document.getElementById("deviceStatusList");
-      list.innerHTML = "";
+    function deviceAgeStatus(lastSeenAt) {
+      if (!lastSeenAt) return { label: "Unknown", className: "offline" };
+      const ageMs = Date.now() - new Date(lastSeenAt).getTime();
+      if (ageMs < 30000) return { label: "Online", className: "online" };
+      if (ageMs < 180000) return { label: "Stale", className: "stale" };
+      return { label: "Offline", className: "offline" };
+    }
 
-      devices.forEach(device => {
-        const item = document.createElement("div");
-        item.className = "status-item";
-        item.innerHTML = `
-          <div class="status-row">
-            <strong>${device.name}</strong>
-            <span class="badge ${getStatusClass(device.status)}">${device.status}</span>
-          </div>
-          <p class="label">${device.type}</p>
-          <p>${device.task}</p>
-          <p class="label">Communication: ${device.communication}</p>
+    function formatTime(value) {
+      if (!value) return "-";
+      return new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    }
+
+    async function fetchJson(path) {
+      const response = await fetch(`${state.apiBase}${path}`, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`${path} returned ${response.status}`);
+      }
+      return response.json();
+    }
+
+    async function fetchAll() {
+      els.errorText.textContent = "";
+      const [devices, sensors, cameras] = await Promise.all([
+        fetchJson("/api/devices"),
+        fetchJson("/api/sensors"),
+        fetchJson("/api/cameras")
+      ]);
+      state.devices = devices;
+      state.sensors = sensors;
+      state.cameras = cameras;
+      if (!state.selectedCamera && cameras.length) {
+        state.selectedCamera = cameras[0].device_id;
+      }
+      render();
+    }
+
+    function renderSummary() {
+      const motionActive = state.sensors.filter(sensor => sensor.reading && sensor.reading.motion).length;
+      els.deviceCount.textContent = state.devices.length;
+      els.sensorCount.textContent = state.sensors.length;
+      els.cameraCount.textContent = state.cameras.length;
+      els.motionState.textContent = motionActive;
+    }
+
+    function renderDevices() {
+      els.deviceRows.innerHTML = "";
+      state.devices.forEach(device => {
+        const status = deviceAgeStatus(device.last_seen_at);
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td><strong>${device.device_id}</strong><br><span class="muted">${device.mac || "-"}</span></td>
+          <td>${device.device_type || "-"}</td>
+          <td>${device.ip || "-"}</td>
+          <td>${(device.capabilities || []).join(", ") || "-"}</td>
+          <td>${formatTime(device.last_seen_at)}</td>
+          <td><span class="status ${status.className}">${status.label}</span></td>
         `;
-        list.appendChild(item);
+        els.deviceRows.appendChild(row);
       });
     }
 
-    function getAlertClass(level) {
-      if (level === "High") return "alert-high";
-      if (level === "Medium") return "alert-medium";
-      return "alert-low";
-    }
+    function renderSensors() {
+      els.sensorCards.innerHTML = "";
+      if (!state.sensors.length) {
+        els.sensorCards.innerHTML = '<div class="reading"><strong>No sensor readings yet</strong><span class="muted">Waiting for C3 posts.</span></div>';
+        return;
+      }
 
-    function renderAlerts() {
-      const list = document.getElementById("alertList");
-      list.innerHTML = "";
-
-      alerts.forEach(alert => {
+      state.sensors.forEach(sensor => {
+        const reading = sensor.reading || {};
         const item = document.createElement("div");
-        item.className = `alert-item ${getAlertClass(alert.level)}`;
+        item.className = "reading";
         item.innerHTML = `
-          <strong>${alert.level} Alert</strong>
-          <p>${alert.message}</p>
-          <p class="label">Source: ${alert.source}</p>
-          <p class="label">Time: ${alert.time}</p>
+          <strong>${sensor.device_id}</strong>
+          <div>Light: ${reading.light_raw ?? "-"}</div>
+          <div>Motion: ${reading.motion ? "yes" : "none"}</div>
+          <div>RSSI: ${reading.rssi ?? "-"} dBm</div>
+          <div class="muted">${formatTime(sensor.received_at)}</div>
         `;
-        list.appendChild(item);
+        els.sensorCards.appendChild(item);
       });
     }
 
-    function createSensorChart() {
-      const ctx = document.getElementById("sensorChart");
+    async function updateChart() {
+      const sensor = state.sensors[0];
+      let labels = [];
+      let lightValues = [];
+      if (sensor) {
+        try {
+          const readings = await fetchJson(`/api/sensors/${encodeURIComponent(sensor.device_id)}/readings?limit=25`);
+          const ordered = readings.slice().reverse();
+          labels = ordered.map(item => formatTime(item.received_at));
+          lightValues = ordered.map(item => item.reading ? item.reading.light_raw : null);
+        } catch (error) {
+          labels = [formatTime(sensor.received_at)];
+          lightValues = [sensor.reading ? sensor.reading.light_raw : null];
+        }
+      }
 
-      new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: ["8 AM", "9 AM", "10 AM", "11 AM", "12 PM", "1 PM", "2 PM"],
-          datasets: [
-            {
-              label: "Motion Events",
-              data: [1, 2, 4, 3, 5, 2, 6],
-              tension: 0.3
-            },
-            {
-              label: "Door Activity Events",
-              data: [0, 1, 2, 1, 3, 2, 4],
-              tension: 0.3
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: "bottom"
-            }
+      if (!state.chart) {
+        state.chart = new Chart(document.getElementById("sensorChart"), {
+          type: "line",
+          data: {
+            labels,
+            datasets: [{
+              label: "Light raw",
+              data: lightValues,
+              borderColor: "#2264d1",
+              backgroundColor: "rgba(34, 100, 209, 0.12)",
+              tension: 0.25,
+              fill: true
+            }]
           },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: {
-                precision: 0
-              }
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { position: "bottom" }
+            },
+            scales: {
+              y: { beginAtZero: true }
             }
           }
-        }
-      });
-    }
-
-    function addRandomAlert() {
-      const alertOptions = [
-        {
-          level: "High",
-          message: "New motion event detected near monitored area.",
-          source: "ESP32-S3 Camera Module"
-        },
-        {
-          level: "Medium",
-          message: "Door open or close event detected.",
-          source: "ESP32-C6 Sensor Node 1"
-        },
-        {
-          level: "Low",
-          message: "Processed event successfully stored in cloud backend.",
-          source: "Cloud Storage/API"
-        }
-      ];
-
-      const randomAlert = alertOptions[Math.floor(Math.random() * alertOptions.length)];
-      alerts.unshift({
-        ...randomAlert,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      });
-
-      document.getElementById("alertsToday").textContent = alerts.length;
-      renderAlerts();
-    }
-
-    function simulateCameraStatus() {
-      const camera = devices.find(device => device.name === "ESP32-S3 Camera Module");
-      const preview = document.getElementById("cameraPreview");
-
-      if (camera.status === "Online") {
-        camera.status = "Offline";
-        preview.innerHTML = "ESP32-S3 Camera Stream<br />Status: Disconnected";
+        });
       } else {
-        camera.status = "Online";
-        preview.innerHTML = "ESP32-S3 Camera Stream<br />Status: Connected";
+        state.chart.data.labels = labels;
+        state.chart.data.datasets[0].data = lightValues;
+        state.chart.update();
       }
-
-      renderDeviceStatus();
     }
 
-    async function fetchBackendData() {
-    try {
-
-    // Fetch devices
-    const deviceResponse = await fetch(`${API_BASE_URL}/devices`);
-    const backendDevices = await deviceResponse.json();
-
-    devices.length = 0;
-
-    backendDevices.forEach(device => {
-      devices.push({
-        name: device.display_name || device.device_id,
-        type: device.device_type,
-        task: "Connected through backend API",
-        communication: "Cloud Connected",
-        status: "Online"
-      });
-    });
-
-    renderDeviceStatus();
-
-    // Fetch events
-    const eventResponse = await fetch(`${API_BASE_URL}/events`);
-    const backendEvents = await eventResponse.json();
-
-    alerts.length = 0;
-
-    let motionCount = 0;
-    let doorCount = 0;
-
-    backendEvents.forEach(event => {
-
-      alerts.push({
-        level: "High",
-        message: event.summary || "Event detected",
-        source: event.device_id,
-        time: new Date(event.received_at).toLocaleTimeString()
-      });
-
-      if (
-        event.summary &&
-        event.summary.toLowerCase().includes("motion")
-      ) {
-        motionCount++;
+    function renderCameraSelect() {
+      els.cameraSelect.innerHTML = "";
+      if (!state.cameras.length) {
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "No cameras registered";
+        els.cameraSelect.appendChild(option);
+        return;
       }
 
-      if (
-        event.summary &&
-        event.summary.toLowerCase().includes("door")
-      ) {
-        doorCount++;
-      }
+      state.cameras.forEach(camera => {
+        const option = document.createElement("option");
+        option.value = camera.device_id;
+        option.textContent = `${camera.device_id} (${camera.ip})`;
+        option.selected = camera.device_id === state.selectedCamera;
+        els.cameraSelect.appendChild(option);
+      });
+    }
 
+    function renderCameraFrame() {
+      const cameraId = state.selectedCamera;
+      if (!cameraId) {
+        els.cameraFrame.innerHTML = '<div class="camera-empty">No camera selected.</div>';
+        return;
+      }
+      const streamUrl = `${state.apiBase}/api/cameras/${encodeURIComponent(cameraId)}/stream`;
+      if (state.currentStreamUrl === streamUrl) {
+        return;
+      }
+      state.currentStreamUrl = streamUrl;
+      els.cameraFrame.innerHTML = `<img alt="${cameraId} live stream" src="${streamUrl}">`;
+    }
+
+    function render() {
+      renderSummary();
+      renderDevices();
+      renderSensors();
+      renderCameraSelect();
+      renderCameraFrame();
+      updateChart();
+      els.lastUpdated.textContent = `Last updated ${new Date().toLocaleTimeString()}`;
+    }
+
+    async function refresh() {
+      try {
+        await fetchAll();
+      } catch (error) {
+        els.errorText.textContent = `Gateway fetch failed: ${error.message}`;
+      }
+    }
+
+    els.saveApi.addEventListener("click", () => {
+      state.apiBase = cleanApiBase(els.apiBase.value);
+      localStorage.setItem("jetsonGatewayApi", state.apiBase);
+      state.currentStreamUrl = "";
+      refresh();
     });
 
-    renderAlerts();
+    els.refreshNow.addEventListener("click", refresh);
 
-    document.getElementById("motionEvents").textContent = motionCount;
-    document.getElementById("doorEvents").textContent = doorCount;
-    document.getElementById("alertsToday").textContent = alerts.length;
-    document.getElementById("activeDevices").textContent = devices.length;
+    els.cameraSelect.addEventListener("change", () => {
+      state.selectedCamera = els.cameraSelect.value;
+      state.currentStreamUrl = "";
+      renderCameraFrame();
+    });
 
-  } catch (error) {
-    console.error("Backend connection failed:", error);
-  }
-}
+    els.openCapture.addEventListener("click", () => {
+      if (!state.selectedCamera) return;
+      const url = `${state.apiBase}/api/cameras/${encodeURIComponent(state.selectedCamera)}/capture`;
+      window.open(url, "_blank");
+    });
 
-    renderDeviceStatus();
-    renderAlerts();
-    createSensorChart();
-    fetchBackendData();
+    refresh();
+    setInterval(refresh, 5000);
   </script>
 </body>
 </html>
