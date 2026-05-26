@@ -143,6 +143,9 @@ If `ip` is omitted, the API uses the request source IP.
 ```text
 GET /api/cameras
 GET /api/cameras/{device_id}
+GET /api/cameras/{device_id}/portal
+GET /api/cameras/{device_id}/status
+GET /api/cameras/{device_id}/control
 GET /api/cameras/{device_id}/capture
 GET /api/cameras/{device_id}/stream
 ```
@@ -152,6 +155,12 @@ Examples:
 ```sh
 curl http://10.42.0.1:8080/api/cameras
 curl http://10.42.0.1:8080/api/cameras/camera-front-01/capture --output capture.jpg
+```
+
+Open the camera settings portal through the gateway:
+
+```text
+http://10.42.0.1:8080/api/cameras/camera-front-01/portal
 ```
 
 Open the stream in a browser or video client:

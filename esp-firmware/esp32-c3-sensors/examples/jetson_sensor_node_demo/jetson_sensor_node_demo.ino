@@ -32,13 +32,18 @@ const int SCL_PIN = D5;
 const uint32_t WIFI_TIMEOUT_MS = 30000;
 const uint32_t REGISTER_INTERVAL_MS = 60000;
 const uint32_t SAMPLE_INTERVAL_MS = 1000;
-const uint32_t PUSH_INTERVAL_MS = 2000;
+const uint32_t HEARTBEAT_PUSH_INTERVAL_MS = 60000;
+const uint32_t EVENT_PUSH_MIN_INTERVAL_MS = 5000;
+const int LIGHT_CHANGE_THRESHOLD = 50;
 
 static uint32_t lastRegisterMs = 0;
 static uint32_t lastSampleMs = 0;
 static uint32_t lastPushMs = 0;
 static int latestLightRaw = 0;
 static int latestMotion = LOW;
+static int lastPushedLightRaw = -1;
+static int lastPushedMotion = -1;
+static bool hasPushedReading = false;
 
 static String macAddress() {
   uint8_t mac[6];
@@ -113,7 +118,11 @@ static bool registerWithJetson() {
   body += "\"light_pin\":\"A0\",";
   body += "\"pir_pin\":\"D0\",";
   body += "\"i2c_sda\":\"D4\",";
-  body += "\"i2c_scl\":\"D5\"";
+  body += "\"i2c_scl\":\"D5\",";
+  body += "\"sample_interval_ms\":" + String(SAMPLE_INTERVAL_MS) + ",";
+  body += "\"heartbeat_push_interval_ms\":" + String(HEARTBEAT_PUSH_INTERVAL_MS) + ",";
+  body += "\"event_push_min_interval_ms\":" + String(EVENT_PUSH_MIN_INTERVAL_MS) + ",";
+  body += "\"light_change_threshold\":" + String(LIGHT_CHANGE_THRESHOLD);
   body += "}}";
 
   int code = http.POST(body);
@@ -142,7 +151,30 @@ static bool pushReadingToJetson() {
   int code = http.POST(body);
   Serial.printf("Device gateway sensor POST: %d\n", code);
   http.end();
-  return code >= 200 && code < 300;
+  bool ok = code >= 200 && code < 300;
+  if (ok) {
+    lastPushedLightRaw = latestLightRaw;
+    lastPushedMotion = latestMotion;
+    hasPushedReading = true;
+  }
+  return ok;
+}
+
+static bool shouldPushReading() {
+  if (!hasPushedReading) {
+    return lastPushMs == 0 || millis() - lastPushMs >= EVENT_PUSH_MIN_INTERVAL_MS;
+  }
+
+  uint32_t now = millis();
+  if (latestMotion != lastPushedMotion) {
+    return true;
+  }
+
+  if (abs(latestLightRaw - lastPushedLightRaw) >= LIGHT_CHANGE_THRESHOLD && now - lastPushMs >= EVENT_PUSH_MIN_INTERVAL_MS) {
+    return true;
+  }
+
+  return now - lastPushMs >= HEARTBEAT_PUSH_INTERVAL_MS;
 }
 
 void setup() {
@@ -182,7 +214,7 @@ void loop() {
     Serial.println(WiFi.localIP());
   }
 
-  if (millis() - lastPushMs >= PUSH_INTERVAL_MS) {
+  if (shouldPushReading()) {
     lastPushMs = millis();
     pushReadingToJetson();
   }

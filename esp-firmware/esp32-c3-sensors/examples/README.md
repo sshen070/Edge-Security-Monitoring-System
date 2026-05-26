@@ -76,6 +76,16 @@ The sensor node also pushes live readings to:
 POST http://10.42.0.1:8080/api/sensors/sensor-node-01/readings
 ```
 
+To reduce network and power usage, it samples locally every second but only
+posts when one of these is true:
+
+```text
+initial reading after boot
+PIR motion state changed
+light changed by at least 50 raw ADC counts
+60 second heartbeat interval elapsed
+```
+
 ### Output Node
 
 Path:

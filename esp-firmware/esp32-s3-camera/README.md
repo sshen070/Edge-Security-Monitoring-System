@@ -26,6 +26,15 @@ Raw still JPEG:  http://<ip>/capture
 Raw MJPEG feed:  http://<ip>:81/stream
 ```
 
+From a Mac or any client that can reach the Jetson but not the ESP private
+subnet, use the gateway proxy:
+
+```text
+Portal/settings: http://<jetson-ip>:8080/api/cameras/camera-front-01/portal
+Raw still JPEG:  http://<jetson-ip>:8080/api/cameras/camera-front-01/capture
+Raw MJPEG feed:  http://<jetson-ip>:8080/api/cameras/camera-front-01/stream
+```
+
 Detailed camera settings and URL/header controls are documented in:
 
 ```text
