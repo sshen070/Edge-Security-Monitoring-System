@@ -31,6 +31,7 @@ subnet, use the gateway proxy:
 
 ```text
 Portal/settings: http://<jetson-ip>:8080/api/cameras/camera-front-01/portal
+Stream viewer:   http://<jetson-ip>:8080/api/cameras/camera-front-01/viewer
 Raw still JPEG:  http://<jetson-ip>:8080/api/cameras/camera-front-01/capture
 Raw MJPEG feed:  http://<jetson-ip>:8080/api/cameras/camera-front-01/stream
 ```

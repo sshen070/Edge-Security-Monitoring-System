@@ -35,6 +35,7 @@ GET /api/sensors
 GET /api/sensors/<device_id>/readings
 GET /api/cameras
 GET /api/cameras/<device_id>/portal
+GET /api/cameras/<device_id>/viewer
 GET /api/cameras/<device_id>/stream
 GET /api/cameras/<device_id>/capture
 ```

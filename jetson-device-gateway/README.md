@@ -144,6 +144,7 @@ If `ip` is omitted, the API uses the request source IP.
 GET /api/cameras
 GET /api/cameras/{device_id}
 GET /api/cameras/{device_id}/portal
+GET /api/cameras/{device_id}/viewer
 GET /api/cameras/{device_id}/status
 GET /api/cameras/{device_id}/control
 GET /api/cameras/{device_id}/capture
@@ -163,7 +164,13 @@ Open the camera settings portal through the gateway:
 http://10.42.0.1:8080/api/cameras/camera-front-01/portal
 ```
 
-Open the stream in a browser or video client:
+Open the stream viewer in a browser:
+
+```text
+http://10.42.0.1:8080/api/cameras/camera-front-01/viewer
+```
+
+Open the raw MJPEG stream in a browser or video client:
 
 ```text
 http://10.42.0.1:8080/api/cameras/camera-front-01/stream

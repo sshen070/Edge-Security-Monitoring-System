@@ -196,6 +196,7 @@ def get_camera(device_id: str) -> dict:
         "portal_url": f"/api/cameras/{device_id}/portal",
         "capture_url": f"/api/cameras/{device_id}/capture",
         "stream_url": f"/api/cameras/{device_id}/stream",
+        "viewer_url": f"/api/cameras/{device_id}/viewer",
         "status_url": f"/api/cameras/{device_id}/status",
         "control_url": f"/api/cameras/{device_id}/control",
         "direct_portal_url": f"http://{ip}/portal",
@@ -231,7 +232,7 @@ input[type=checkbox]{{width:auto;justify-self:start;}}
 </style>
 </head>
 <body>
-<header><strong>ESP32 Camera Portal</strong><a id="raw-stream" href="/api/cameras/{device_id}/stream">Stream</a></header>
+<header><strong>ESP32 Camera Portal</strong><a id="raw-stream" href="/api/cameras/{device_id}/viewer">Stream</a></header>
 <main>
 <section>
 <div class="actions"><button id="capture">Refresh Still</button><a id="save" href="/api/cameras/{device_id}/capture" download="capture.jpg">Save Still</a></div>
@@ -290,6 +291,31 @@ document.querySelectorAll('[data-var]').forEach(el=>el.addEventListener('change'
 document.getElementById('capture').addEventListener('click',refreshStill);
 refreshStill();
 </script>
+</body>
+</html>"""
+    return Response(content=html, media_type="text/html")
+
+
+@app.get("/api/cameras/{device_id}/viewer")
+def camera_viewer(device_id: str) -> Response:
+    resolve_camera(device_id)
+    html = f"""<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{device_id} Stream</title>
+<style>
+html,body{{margin:0;background:#111827;color:#e5e7eb;font-family:Arial,Helvetica,sans-serif;}}
+header{{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;background:#1f2937;border-bottom:1px solid #374151;}}
+a{{color:#fff;background:#2563eb;border-radius:5px;padding:7px 12px;text-decoration:none;}}
+main{{min-height:calc(100vh - 48px);display:flex;align-items:center;justify-content:center;padding:12px;}}
+img{{display:block;max-width:100%;max-height:calc(100vh - 72px);background:#050505;border:1px solid #374151;}}
+</style>
+</head>
+<body>
+<header><strong>{device_id}</strong><a href="/api/cameras/{device_id}/portal">Portal</a></header>
+<main><img src="/api/cameras/{device_id}/stream" alt="{device_id} live stream"></main>
 </body>
 </html>"""
     return Response(content=html, media_type="text/html")
