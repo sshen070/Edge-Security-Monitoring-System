@@ -61,6 +61,28 @@ def device_status_label(last_seen_at: Optional[str]) -> tuple[str, str]:
     return "Offline", "offline"
 
 
+def latest_activity_at(device: dict, latest_reading: Optional[dict]) -> Optional[str]:
+    candidates = [device.get("last_seen_at")]
+    if latest_reading:
+        candidates.append(latest_reading.get("received_at"))
+
+    latest_value = None
+    latest_time = None
+    for value in candidates:
+        if not value:
+            continue
+        try:
+            parsed = datetime.fromisoformat(value)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+        if latest_time is None or parsed > latest_time:
+            latest_time = parsed
+            latest_value = value
+    return latest_value
+
+
 def example_endpoint_path(path: str, devices: list[dict], cameras: list[dict], sensors: list[dict]) -> str:
     if "{device_id}" not in path:
         return path
@@ -107,8 +129,6 @@ def index() -> Response:
     device_cards_html = []
     modal_sections_html = []
     for index, device in enumerate(devices):
-        label, class_name = device_status_label(device.get("last_seen_at"))
-        is_available = class_name in {"online", "stale"}
         modal_id = f"device-modal-{index}"
         device_id = html_escape(device.get("device_id"))
         raw_device_id = str(device.get("device_id"))
@@ -117,6 +137,9 @@ def index() -> Response:
         mac = html_escape(device.get("mac") or "-")
         capabilities = ", ".join(device.get("capabilities", [])) or "-"
         latest = latest_by_device.get(raw_device_id)
+        activity_at = latest_activity_at(device, latest)
+        label, class_name = device_status_label(activity_at)
+        is_available = class_name in {"online", "stale"}
         latest_summary = ""
         if latest:
             latest_summary = ", ".join(f"{key}: {value}" for key, value in latest.get("reading", {}).items())
@@ -196,7 +219,7 @@ def index() -> Response:
                 <span>IP</span><strong>{ip}</strong>
                 <span>MAC</span><strong>{mac}</strong>
                 <span>Status</span><strong>{label}</strong>
-                <span>Last seen</span><strong>{html_escape(device.get("last_seen_at"))}</strong>
+                <span>Activity</span><strong>{html_escape(activity_at)}</strong>
                 <span>Capabilities</span><strong>{html_escape(capabilities)}</strong>
               </div>
               <h4>Available Calls</h4>
@@ -749,12 +772,22 @@ async def camera_stream(device_id: str, request: Request) -> StreamingResponse:
 
 
 @app.post("/api/sensors/{device_id}/readings", response_model=SensorReadingOut, status_code=status.HTTP_201_CREATED)
-def ingest_sensor_reading(device_id: str, body: SensorReadingIn) -> dict:
+def ingest_sensor_reading(device_id: str, body: SensorReadingIn, source_ip: ClientIp) -> dict:
     now = utc_now_iso()
     with db_session() as db:
         cursor = db.execute(
             "INSERT INTO sensor_readings (device_id, reading_json, received_at) VALUES (?, ?, ?)",
             (device_id, json.dumps(body.reading), now),
+        )
+        db.execute(
+            """
+            UPDATE devices
+            SET ip = COALESCE(?, ip),
+                updated_at = ?,
+                last_seen_at = ?
+            WHERE device_id = ?
+            """,
+            (source_ip, now, now, device_id),
         )
         row = db.execute("SELECT * FROM sensor_readings WHERE id = ?", (cursor.lastrowid,)).fetchone()
         return row_to_reading(row)
