@@ -1,4 +1,3 @@
-
 /*
   ESP32-S3 Camera quick access:
     Portal/settings: http://<ip>/portal
@@ -10,7 +9,7 @@
 */
 
 #include "esp_camera.h"
-#include "esp_wpa2.h"
+#include <HTTPClient.h>
 #include <WiFi.h>
 
 #define CAMERA_MODEL_XIAO_ESP32S3 // Has PSRAM
@@ -23,9 +22,45 @@
 void startCameraServer();
 void setupLedFlash(int pin);
 
+static String macAddress() {
+  uint8_t mac[6];
+  WiFi.macAddress(mac);
+  char out[18];
+  snprintf(out, sizeof(out), "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+  return String(out);
+}
+
+static bool registerWithJetson() {
+  if (WiFi.status() != WL_CONNECTED) {
+    return false;
+  }
+
+  HTTPClient http;
+  http.begin(DEVICE_REGISTRY_URL);
+  http.addHeader("Content-Type", "application/json");
+
+  String body = "{";
+  body += "\"device_id\":\"" + String(DEVICE_ID) + "\",";
+  body += "\"device_type\":\"" + String(DEVICE_TYPE) + "\",";
+  body += "\"ip\":\"" + WiFi.localIP().toString() + "\",";
+  body += "\"mac\":\"" + macAddress() + "\",";
+  body += "\"firmware\":\"" + String(FIRMWARE_NAME) + "\",";
+  body += "\"capabilities\":[\"camera\",\"stream\",\"capture\",\"portal\"],";
+  body += "\"metadata\":{";
+  body += "\"portal\":\"http://" + WiFi.localIP().toString() + "/portal\",";
+  body += "\"capture\":\"http://" + WiFi.localIP().toString() + "/capture\",";
+  body += "\"stream\":\"http://" + WiFi.localIP().toString() + ":81/stream\"";
+  body += "}}";
+
+  int code = http.POST(body);
+  Serial.printf("Jetson registry POST: %d\n", code);
+  http.end();
+  return code >= 200 && code < 300;
+}
+
 void setup() {
   Serial.begin(115200);
-  while(!Serial);
+  delay(1500);
   Serial.setDebugOutput(true);
   Serial.println();
 
@@ -91,18 +126,12 @@ void setup() {
   }
   applyCameraFeedPreset(s);
 
-// Setup LED FLash if LED pin is defined in camera_pins.h
+// Setup LED flash if LED pin is defined in camera_pins.h
 #if defined(LED_GPIO_NUM)
   setupLedFlash(LED_GPIO_NUM);
 #endif
 
   WiFi.mode(WIFI_STA);
-
-  // esp_wifi_sta_wpa2_ent_set_identity((uint8_t *)EAP_IDENTITY, strlen(EAP_IDENTITY));
-  // esp_wifi_sta_wpa2_ent_set_username((uint8_t *)EAP_USERNAME, strlen(EAP_USERNAME));
-  // esp_wifi_sta_wpa2_ent_set_password((uint8_t *)EAP_PASSWORD, strlen(EAP_PASSWORD));
-  // esp_wifi_sta_wpa2_ent_enable();
-
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   WiFi.setSleep(false);
 
@@ -120,6 +149,7 @@ void setup() {
     Serial.println("WiFi connected");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
+    registerWithJetson();
   } else {
     Serial.println("WiFi failed to connect");
     Serial.print("WiFi status: ");

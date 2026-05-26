@@ -1,0 +1,122 @@
+# Jetson ESP32-C3 Demo Sketches
+
+These examples target Seeed XIAO ESP32-C3 boards plugged into the XIAO expansion board with Grove sensors.
+
+All three sketches connect to the Jetson Orin Nano private ESP WiFi network:
+
+```text
+SSID: ESP-NET
+Registry API: http://10.42.0.1:8080/api/devices/register
+Sensor API:   http://10.42.0.1:8080/api/sensors
+```
+
+Before flashing, update this in each `.ino`:
+
+```cpp
+const char *WIFI_PASSWORD = "change-this-password";
+```
+
+## Examples
+
+### Sensor Node
+
+Path:
+
+```text
+esp-firmware/esp32-c3-sensors/examples/jetson_sensor_node_demo/jetson_sensor_node_demo.ino
+```
+
+Grove wiring:
+
+```text
+Light sensor: A0
+PIR motion:   D0
+I2C SDA:      D4
+I2C SCL:      D5
+```
+
+Registers as:
+
+```text
+sensor-node-01
+```
+
+Capabilities:
+
+```text
+pir, light, i2c-scan
+```
+
+The sensor node also pushes live readings to:
+
+```text
+POST http://10.42.0.1:8080/api/sensors/sensor-node-01/readings
+```
+
+### Output Node
+
+Path:
+
+```text
+esp-firmware/esp32-c3-sensors/examples/jetson_output_node_demo/jetson_output_node_demo.ino
+```
+
+Grove wiring:
+
+```text
+LED:    D10 or built-in LED
+Buzzer: D1
+Servo:  D2 signal
+```
+
+Registers as:
+
+```text
+output-node-01
+```
+
+Capabilities:
+
+```text
+led, buzzer, servo
+```
+
+The servo demo generates pulses directly and does not require the `ESP32Servo` library. Use external 5V power for larger servos.
+
+### Gateway/Dashboard Node
+
+Path:
+
+```text
+esp-firmware/esp32-c3-sensors/examples/jetson_gateway_dashboard_demo/jetson_gateway_dashboard_demo.ino
+```
+
+Registers as:
+
+```text
+gateway-dashboard-01
+```
+
+Capabilities:
+
+```text
+wifi-status, local-dashboard
+```
+
+After it connects, open the IP printed in Serial Monitor. The node serves:
+
+```text
+GET /
+GET /status
+```
+
+## Arduino IDE
+
+Use:
+
+```text
+Board: XIAO_ESP32C3
+Serial Monitor: 115200 baud
+```
+
+These examples intentionally do not use the XIAO ESP32S3 Sense camera/mic. The C3 boards are for Grove sensors, simple outputs, WiFi registration, and small local HTTP tools.

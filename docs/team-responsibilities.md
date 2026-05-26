@@ -29,8 +29,8 @@ Folder:
 - `cloud-backend/`
 
 Consumes:
-- Sensor data from `jetson-sensor-gateway/`
-- Camera events/status from `jetson-camera-gateway/`
+- Sensor data from `jetson-device-gateway/`
+- Camera events/status from `jetson-device-gateway/`
 
 Provides:
 - API endpoints for dashboard
@@ -47,50 +47,31 @@ Responsible for:
 - Camera/WebRTC streaming code
 - Define sensor data format sent to Jetson
 - Define camera stream format sent to Jetson
-- Provide minimal Jetson-side receiver examples/test scripts
 
 Folders:
 - `esp-firmware/esp32-c3-sensors/`
 - `esp-firmware/esp32-s3-camera/`
-- `esp-firmware/receiver-reference/`
 
 Important boundary:
-- Hikaru provides ESP outputs and minimal receiver examples.
-- Jetson gateway owners turn those examples into full gateway services.
+- ESP firmware owns direct device behavior.
+- Jetson device gateway owns stable API access for other services.
 
 ---
 
-## 4. Jetson Nano Sensor Gateway + API for ESP32-C3 Path
+## 4. Jetson Orin Nano Device Gateway + API for ESP Paths
 
 Responsible for:
-- Use Hikaru’s Zigbee packet format and receiver example
-- Set up Zigbee coordinator / receiver on Jetson
-- Receive data from 3 ESP32-C3 sensor nodes
-- Parse and validate incoming sensor packets
-- Perform local preprocessing if needed
-- Send processed sensor data to cloud backend API
+- Host the ESP-only WiFi network on the Jetson side
+- Register ESP32-C3 sensor nodes and ESP32-S3 camera nodes
+- Store current device IPs and sensor readings
+- Proxy ESP32-S3 camera capture/stream endpoints by device ID
+- Provide one local API surface for dashboard/backend services
 
 Folder:
-- `jetson-sensor-gateway/`
+- `jetson-device-gateway/`
 
 Consumes:
-- `esp-firmware/receiver-reference/zigbee-receiver-example/`
+- `esp-firmware/esp32-c3-sensors/packet-format.md`
+- `esp-firmware/esp32-s3-camera/stream-format.md`
 - `shared/schemas/sensor-reading.schema.json`
-
----
-
-## 5. Jetson Nano Camera Gateway + API for ESP32-S3/S6 Path
-
-Responsible for:
-- Use Hikaru’s WebRTC/IP-camera stream format and receiver example
-- Set up WebRTC/IP-camera receiver on Jetson
-- Receive camera stream from ESP32-S3/S6 camera device
-- Perform optional edge video processing
-- Send camera status, metadata, or detected events to cloud backend API
-
-Folder:
-- `jetson-camera-gateway/`
-
-Consumes:
-- `esp-firmware/receiver-reference/webrtc-receiver-example/`
 - `shared/schemas/camera-event.schema.json`

@@ -138,10 +138,28 @@ Resolution options are documented in `camera_presets.h`, including `CAMERA_RES_Q
 
 Lower resolutions are smoother and lower latency. Higher resolutions are sharper but require more bandwidth and memory.
 
+## Jetson Registration
+
+Edit `secrets.h` before flashing:
+
+```cpp
+const char *WIFI_SSID = "ESP-NET";
+const char *WIFI_PASSWORD = "change-this-password";
+const char *DEVICE_ID = "camera-front-01";
+const char *DEVICE_REGISTRY_URL = "http://10.42.0.1:8080/api/devices/register";
+```
+
+After WiFi connects, the camera registers its IP and capabilities with the Jetson Orin Nano device gateway. The same gateway can then proxy:
+
+```text
+http://10.42.0.1:8080/api/cameras/camera-front-01/capture
+http://10.42.0.1:8080/api/cameras/camera-front-01/stream
+```
+
 ## Files
 
 ```text
-esp32s3_webrtc_copy_20260513102720.ino  Main boot/setup sketch
+camera_stream_portal.ino                 Main boot/setup sketch
 app_httpd.cpp                           HTTP endpoints and portal
 camera_presets.h                        Boot defaults and setting reference
 camera_pins.h                           Board pin map
