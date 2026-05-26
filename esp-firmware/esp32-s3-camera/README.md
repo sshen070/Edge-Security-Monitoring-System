@@ -26,6 +26,10 @@ Raw still JPEG:  http://<ip>/capture
 Raw MJPEG feed:  http://<ip>:81/stream
 ```
 
+The camera sensor powers on only when capture, stream, or camera-control routes
+need it. After `CAMERA_IDLE_SLEEP_MS` with no active stream or camera request,
+the firmware deinitializes the camera driver to reduce idle heat.
+
 From a Mac or any client that can reach the Jetson but not the ESP private
 subnet, use the gateway proxy:
 

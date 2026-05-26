@@ -22,6 +22,12 @@
 void startCameraServer();
 void setupLedFlash(int pin);
 
+static camera_config_t cameraConfig;
+static bool cameraConfigured = false;
+static bool cameraReady = false;
+static volatile uint8_t cameraUseCount = 0;
+static uint32_t lastCameraUseMs = 0;
+
 static String macAddress() {
   uint8_t mac[6];
   WiFi.macAddress(mac);
@@ -58,63 +64,68 @@ static bool registerWithJetson() {
   return code >= 200 && code < 300;
 }
 
-void setup() {
-  Serial.begin(115200);
-  delay(1500);
-  Serial.setDebugOutput(true);
-  Serial.println();
-
-  camera_config_t config;
-  config.ledc_channel = LEDC_CHANNEL_0;
-  config.ledc_timer = LEDC_TIMER_0;
-  config.pin_d0 = Y2_GPIO_NUM;
-  config.pin_d1 = Y3_GPIO_NUM;
-  config.pin_d2 = Y4_GPIO_NUM;
-  config.pin_d3 = Y5_GPIO_NUM;
-  config.pin_d4 = Y6_GPIO_NUM;
-  config.pin_d5 = Y7_GPIO_NUM;
-  config.pin_d6 = Y8_GPIO_NUM;
-  config.pin_d7 = Y9_GPIO_NUM;
-  config.pin_xclk = XCLK_GPIO_NUM;
-  config.pin_pclk = PCLK_GPIO_NUM;
-  config.pin_vsync = VSYNC_GPIO_NUM;
-  config.pin_href = HREF_GPIO_NUM;
-  config.pin_sscb_sda = SIOD_GPIO_NUM;
-  config.pin_sscb_scl = SIOC_GPIO_NUM;
-  config.pin_pwdn = PWDN_GPIO_NUM;
-  config.pin_reset = RESET_GPIO_NUM;
-  config.xclk_freq_hz = 20000000;
-  config.frame_size = FRAMESIZE_UXGA;
-  config.pixel_format = PIXFORMAT_JPEG;
-  config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
-  config.fb_location = CAMERA_FB_IN_PSRAM;
-  config.jpeg_quality = 12;
-  config.fb_count = 1;
+static void configureCamera() {
+  cameraConfig.ledc_channel = LEDC_CHANNEL_0;
+  cameraConfig.ledc_timer = LEDC_TIMER_0;
+  cameraConfig.pin_d0 = Y2_GPIO_NUM;
+  cameraConfig.pin_d1 = Y3_GPIO_NUM;
+  cameraConfig.pin_d2 = Y4_GPIO_NUM;
+  cameraConfig.pin_d3 = Y5_GPIO_NUM;
+  cameraConfig.pin_d4 = Y6_GPIO_NUM;
+  cameraConfig.pin_d5 = Y7_GPIO_NUM;
+  cameraConfig.pin_d6 = Y8_GPIO_NUM;
+  cameraConfig.pin_d7 = Y9_GPIO_NUM;
+  cameraConfig.pin_xclk = XCLK_GPIO_NUM;
+  cameraConfig.pin_pclk = PCLK_GPIO_NUM;
+  cameraConfig.pin_vsync = VSYNC_GPIO_NUM;
+  cameraConfig.pin_href = HREF_GPIO_NUM;
+  cameraConfig.pin_sscb_sda = SIOD_GPIO_NUM;
+  cameraConfig.pin_sscb_scl = SIOC_GPIO_NUM;
+  cameraConfig.pin_pwdn = PWDN_GPIO_NUM;
+  cameraConfig.pin_reset = RESET_GPIO_NUM;
+  cameraConfig.xclk_freq_hz = 20000000;
+  cameraConfig.frame_size = FRAMESIZE_UXGA;
+  cameraConfig.pixel_format = PIXFORMAT_JPEG;
+  cameraConfig.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+  cameraConfig.fb_location = CAMERA_FB_IN_PSRAM;
+  cameraConfig.jpeg_quality = 12;
+  cameraConfig.fb_count = 1;
   
   // if PSRAM IC present, init with UXGA resolution and higher JPEG quality
   //                      for larger pre-allocated frame buffer.
-  if(config.pixel_format == PIXFORMAT_JPEG){
+  if(cameraConfig.pixel_format == PIXFORMAT_JPEG){
     if(psramFound()){
-      config.jpeg_quality = 10;
-      config.fb_count = 2;
-      config.grab_mode = CAMERA_GRAB_LATEST;
+      cameraConfig.jpeg_quality = 10;
+      cameraConfig.fb_count = 2;
+      cameraConfig.grab_mode = CAMERA_GRAB_LATEST;
     } else {
       // Limit the frame size when PSRAM is not available
-      config.frame_size = FRAMESIZE_SVGA;
-      config.fb_location = CAMERA_FB_IN_DRAM;
+      cameraConfig.frame_size = FRAMESIZE_SVGA;
+      cameraConfig.fb_location = CAMERA_FB_IN_DRAM;
     }
   } else {
-    config.frame_size = FRAMESIZE_240X240;
+    cameraConfig.frame_size = FRAMESIZE_240X240;
 #if CONFIG_IDF_TARGET_ESP32S3
-    config.fb_count = 2;
+    cameraConfig.fb_count = 2;
 #endif
   }
+  cameraConfigured = true;
+}
 
-  // camera init
-  esp_err_t err = esp_camera_init(&config);
+bool ensureCameraReady() {
+  if (cameraReady) {
+    lastCameraUseMs = millis();
+    return true;
+  }
+
+  if (!cameraConfigured) {
+    configureCamera();
+  }
+
+  esp_err_t err = esp_camera_init(&cameraConfig);
   if (err != ESP_OK) {
     Serial.printf("Camera init failed with error 0x%x", err);
-    return;
+    return false;
   }
 
   sensor_t * s = esp_camera_sensor_get();
@@ -125,6 +136,47 @@ void setup() {
     s->set_saturation(s, -2); // lower the saturation
   }
   applyCameraFeedPreset(s);
+  cameraReady = true;
+  lastCameraUseMs = millis();
+  Serial.println("Camera powered on");
+  return true;
+}
+
+void cameraUseBegin() {
+  cameraUseCount++;
+  lastCameraUseMs = millis();
+}
+
+void cameraUseEnd() {
+  if (cameraUseCount > 0) {
+    cameraUseCount--;
+  }
+  lastCameraUseMs = millis();
+}
+
+void noteCameraActivity() {
+  lastCameraUseMs = millis();
+}
+
+static void serviceCameraPower() {
+  if (!cameraReady || cameraUseCount > 0) {
+    return;
+  }
+  if (millis() - lastCameraUseMs < CAMERA_IDLE_SLEEP_MS) {
+    return;
+  }
+  esp_camera_deinit();
+  cameraReady = false;
+  Serial.println("Camera powered down after idle timeout");
+}
+
+void setup() {
+  Serial.begin(115200);
+  delay(1500);
+  Serial.setDebugOutput(true);
+  Serial.println();
+
+  configureCamera();
 
 // Setup LED flash if LED pin is defined in camera_pins.h
 #if defined(LED_GPIO_NUM)
@@ -133,7 +185,7 @@ void setup() {
 
   WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-  WiFi.setSleep(false);
+  WiFi.setSleep(true);
 
   int attempts = 0;
 
@@ -162,9 +214,10 @@ void setup() {
   Serial.print("Camera Ready! Use 'http://");
   Serial.print(WiFi.localIP());
   Serial.println("' to connect");
+  Serial.println("Camera sensor stays off until /capture, /stream, or portal controls need it.");
 }
 
 void loop() {
-  // Do nothing. Everything is done in another task by the web server
-  delay(10000);
+  serviceCameraPower();
+  delay(1000);
 }

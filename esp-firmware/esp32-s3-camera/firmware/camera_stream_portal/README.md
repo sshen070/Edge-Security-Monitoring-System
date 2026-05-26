@@ -16,6 +16,30 @@ Raw MJPEG feed:  http://<ip>:81/stream
 
 The portal runs on port `80`. The live stream runs on port `81` so the long-running MJPEG response does not block settings, status, or capture requests.
 
+## Idle Power Behavior
+
+The web server stays online after boot, but the camera sensor/driver does not
+stay initialized forever. The firmware powers the camera on when one of these
+routes needs it:
+
+```text
+/capture
+:81/stream
+/status
+/control
+/bmp
+low-level register/resolution routes
+```
+
+When there are no active stream clients and no camera request has used the
+sensor for `CAMERA_IDLE_SLEEP_MS`, the firmware calls `esp_camera_deinit()` and
+leaves only WiFi plus the HTTP servers running. The next capture, stream, or
+portal control request initializes the camera again and reapplies
+`camera_presets.h`.
+
+This reduces idle heat and power draw. Runtime settings changed from the portal
+may reset after an idle sleep because the camera presets are reapplied on wake.
+
 ## Raw Endpoints
 
 `/capture` returns a single raw `image/jpeg`.

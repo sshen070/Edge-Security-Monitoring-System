@@ -105,6 +105,9 @@
 #define CAMERA_PRESET_VFLIP    0  // 0 normal, 1 flip vertically.
 #define CAMERA_PRESET_COLORBAR 0  // 0 normal image, 1 sensor color-bar test pattern.
 
+// Power behavior. Camera driver shuts down after this much idle time with no active stream.
+#define CAMERA_IDLE_SLEEP_MS 60000
+
 static inline void applyCameraFeedPreset(sensor_t *sensor) {
   if (!sensor) {
     return;

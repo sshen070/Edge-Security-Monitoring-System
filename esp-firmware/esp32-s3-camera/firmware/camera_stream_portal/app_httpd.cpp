@@ -50,6 +50,31 @@ httpd_handle_t stream_httpd = NULL;
 httpd_handle_t camera_httpd = NULL;
 static volatile uint8_t active_stream_clients = 0;
 
+extern bool ensureCameraReady();
+extern void cameraUseBegin();
+extern void cameraUseEnd();
+extern void noteCameraActivity();
+
+class CameraUseGuard {
+public:
+  CameraUseGuard() {
+    cameraUseBegin();
+  }
+
+  ~CameraUseGuard() {
+    cameraUseEnd();
+  }
+};
+
+static bool begin_camera_request(httpd_req_t *req) {
+  if (!ensureCameraReady()) {
+    httpd_resp_send_500(req);
+    return false;
+  }
+  noteCameraActivity();
+  return true;
+}
+
 typedef struct {
   size_t size;   //number of values used for filtering
   size_t index;  //current value index
@@ -102,6 +127,11 @@ void enable_led(bool en) {  // Turn LED On or Off
 #endif
 
 static esp_err_t bmp_handler(httpd_req_t *req) {
+  CameraUseGuard camera_use;
+  if (!begin_camera_request(req)) {
+    return ESP_FAIL;
+  }
+
   camera_fb_t *fb = NULL;
   esp_err_t res = ESP_OK;
   uint64_t fr_start = esp_timer_get_time();
@@ -341,6 +371,11 @@ static esp_err_t apply_request_camera_settings(httpd_req_t *req) {
 }
 
 static esp_err_t capture_handler(httpd_req_t *req) {
+  CameraUseGuard camera_use;
+  if (!begin_camera_request(req)) {
+    return ESP_FAIL;
+  }
+
   camera_fb_t *fb = NULL;
   esp_err_t res = ESP_OK;
   int64_t fr_start = esp_timer_get_time();
@@ -390,6 +425,11 @@ static esp_err_t capture_handler(httpd_req_t *req) {
 }
 
 static esp_err_t stream_handler(httpd_req_t *req) {
+  CameraUseGuard camera_use;
+  if (!begin_camera_request(req)) {
+    return ESP_FAIL;
+  }
+
   camera_fb_t *fb = NULL;
   struct timeval _timestamp;
   esp_err_t res = ESP_OK;
@@ -519,6 +559,11 @@ static esp_err_t parse_get(httpd_req_t *req, char **obuf) {
 }
 
 static esp_err_t cmd_handler(httpd_req_t *req) {
+  CameraUseGuard camera_use;
+  if (!begin_camera_request(req)) {
+    return ESP_FAIL;
+  }
+
   char *buf = NULL;
   char variable[32];
   char value[32];
@@ -554,6 +599,11 @@ static int print_reg(char *p, sensor_t *s, uint16_t reg, uint32_t mask) {
 }
 
 static esp_err_t status_handler(httpd_req_t *req) {
+  CameraUseGuard camera_use;
+  if (!begin_camera_request(req)) {
+    return ESP_FAIL;
+  }
+
   static char json_response[1024];
 
   sensor_t *s = esp_camera_sensor_get();
@@ -628,6 +678,11 @@ static esp_err_t status_handler(httpd_req_t *req) {
 }
 
 static esp_err_t xclk_handler(httpd_req_t *req) {
+  CameraUseGuard camera_use;
+  if (!begin_camera_request(req)) {
+    return ESP_FAIL;
+  }
+
   char *buf = NULL;
   char _xclk[32];
 
@@ -655,6 +710,11 @@ static esp_err_t xclk_handler(httpd_req_t *req) {
 }
 
 static esp_err_t reg_handler(httpd_req_t *req) {
+  CameraUseGuard camera_use;
+  if (!begin_camera_request(req)) {
+    return ESP_FAIL;
+  }
+
   char *buf = NULL;
   char _reg[32];
   char _mask[32];
@@ -687,6 +747,11 @@ static esp_err_t reg_handler(httpd_req_t *req) {
 }
 
 static esp_err_t greg_handler(httpd_req_t *req) {
+  CameraUseGuard camera_use;
+  if (!begin_camera_request(req)) {
+    return ESP_FAIL;
+  }
+
   char *buf = NULL;
   char _reg[32];
   char _mask[32];
@@ -725,6 +790,11 @@ static int parse_get_var(char *buf, const char *key, int def) {
 }
 
 static esp_err_t pll_handler(httpd_req_t *req) {
+  CameraUseGuard camera_use;
+  if (!begin_camera_request(req)) {
+    return ESP_FAIL;
+  }
+
   char *buf = NULL;
 
   if (parse_get(req, &buf) != ESP_OK) {
@@ -753,6 +823,11 @@ static esp_err_t pll_handler(httpd_req_t *req) {
 }
 
 static esp_err_t win_handler(httpd_req_t *req) {
+  CameraUseGuard camera_use;
+  if (!begin_camera_request(req)) {
+    return ESP_FAIL;
+  }
+
   char *buf = NULL;
 
   if (parse_get(req, &buf) != ESP_OK) {
