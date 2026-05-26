@@ -102,40 +102,114 @@ def index() -> Response:
         for device in devices
         if device.get("device_type") == "esp32-s3-camera" or "camera" in device.get("capabilities", [])
     ]
+    latest_by_device = {sensor["device_id"]: sensor for sensor in sensors}
 
-    device_rows_html = []
-    for device in devices:
+    device_cards_html = []
+    modal_sections_html = []
+    for index, device in enumerate(devices):
         label, class_name = device_status_label(device.get("last_seen_at"))
+        is_available = class_name in {"online", "stale"}
+        modal_id = f"device-modal-{index}"
+        device_id = html_escape(device.get("device_id"))
+        raw_device_id = str(device.get("device_id"))
+        device_type = html_escape(device.get("device_type"))
+        ip = html_escape(device.get("ip") or "-")
+        mac = html_escape(device.get("mac") or "-")
         capabilities = ", ".join(device.get("capabilities", [])) or "-"
-        device_rows_html.append(
+        latest = latest_by_device.get(raw_device_id)
+        latest_summary = ""
+        if latest:
+            latest_summary = ", ".join(f"{key}: {value}" for key, value in latest.get("reading", {}).items())
+
+        if is_available:
+            card_attrs = f'type="button" onclick="openDeviceModal(\'{modal_id}\')"'
+            card_class = "device-card clickable"
+        else:
+            card_attrs = "type=\"button\" disabled"
+            card_class = "device-card disabled"
+        device_cards_html.append(
             f"""
-            <tr>
-              <td><strong>{html_escape(device.get("device_id"))}</strong><br><span>{html_escape(device.get("mac") or "-")}</span></td>
-              <td>{html_escape(device.get("device_type"))}</td>
-              <td>{html_escape(device.get("ip") or "-")}</td>
-              <td>{html_escape(capabilities)}</td>
-              <td>{html_escape(device.get("last_seen_at"))}</td>
-              <td><span class="pill {class_name}">{label}</span></td>
-            </tr>
+            <button class="{card_class}" {card_attrs}>
+              <span class="device-top"><strong>{device_id}</strong><span class="pill {class_name}">{label}</span></span>
+              <span>{device_type}</span>
+              <span>IP: {ip}</span>
+              <span class="muted">{html_escape(capabilities)}</span>
+              {f'<span class="muted">{html_escape(latest_summary)}</span>' if latest_summary else ''}
+            </button>
             """
         )
 
-    camera_cards_html = []
-    for camera in cameras:
-        device_id = html_escape(camera["device_id"])
-        camera_cards_html.append(
+        action_rows = [
+            ("GET", f"/api/devices/{raw_device_id}", "Device registry entry"),
+            ("POST", f"/api/devices/{raw_device_id}/heartbeat", "Update last-seen state"),
+        ]
+        if device.get("device_type") == "esp32-s3-camera" or "camera" in device.get("capabilities", []):
+            action_rows.extend(
+                [
+                    ("GET", f"/api/cameras/{raw_device_id}", "Camera URLs"),
+                    ("GET", f"/api/cameras/{raw_device_id}/portal", "Camera settings portal"),
+                    ("GET", f"/api/cameras/{raw_device_id}/viewer", "Stream viewer"),
+                    ("GET", f"/api/cameras/{raw_device_id}/capture", "Raw JPEG capture"),
+                    ("GET", f"/api/cameras/{raw_device_id}/stream", "Raw MJPEG stream"),
+                    ("GET", f"/api/cameras/{raw_device_id}/status", "Camera status JSON"),
+                    ("GET", f"/api/cameras/{raw_device_id}/control?var=quality&val=10", "Camera control example"),
+                ]
+            )
+        if latest or "sensor" in str(device.get("device_type", "")) or "light" in device.get("capabilities", []):
+            action_rows.extend(
+                [
+                    ("GET", f"/api/sensors/{raw_device_id}/latest", "Latest sensor reading"),
+                    ("GET", f"/api/sensors/{raw_device_id}/readings?limit=100", "Sensor reading history"),
+                    ("POST", f"/api/sensors/{raw_device_id}/readings", "Post a sensor reading"),
+                ]
+            )
+
+        action_rows_html = []
+        for method, path, description in action_rows:
+            path_text = html_escape(path)
+            if method == "GET":
+                path_html = f'<a href="{path_text}"><code>{path_text}</code></a>'
+            else:
+                path_html = f"<code>{path_text}</code>"
+            action_rows_html.append(
+                f"<tr><td><code>{method}</code></td><td>{path_html}</td><td>{html_escape(description)}</td></tr>"
+            )
+
+        curl_lines = [f"curl \"$GATEWAY/api/devices/{raw_device_id}\""]
+        if device.get("device_type") == "esp32-s3-camera" or "camera" in device.get("capabilities", []):
+            curl_lines.extend(
+                [
+                    f"curl \"$GATEWAY/api/cameras/{raw_device_id}/status\"",
+                    f"curl \"$GATEWAY/api/cameras/{raw_device_id}/capture\" --output {raw_device_id}.jpg",
+                ]
+            )
+        if latest or "sensor" in str(device.get("device_type", "")) or "light" in device.get("capabilities", []):
+            curl_lines.append(f"curl \"$GATEWAY/api/sensors/{raw_device_id}/latest\"")
+        curl_examples = "\n".join(curl_lines)
+
+        modal_sections_html.append(
             f"""
-            <article class="item">
+            <section id="{modal_id}" class="modal-panel" hidden>
               <h3>{device_id}</h3>
-              <p>IP: {html_escape(camera.get("ip") or "-")}</p>
-              <div class="links">
-                <a href="/api/cameras/{device_id}/portal">Portal</a>
-                <a href="/api/cameras/{device_id}/viewer">Viewer</a>
-                <a href="/api/cameras/{device_id}/capture">Capture</a>
-                <a href="/api/cameras/{device_id}/stream">Raw stream</a>
-                <a href="/api/cameras/{device_id}/status">Status</a>
+              <div class="meta-grid">
+                <span>Type</span><strong>{device_type}</strong>
+                <span>IP</span><strong>{ip}</strong>
+                <span>MAC</span><strong>{mac}</strong>
+                <span>Status</span><strong>{label}</strong>
+                <span>Last seen</span><strong>{html_escape(device.get("last_seen_at"))}</strong>
+                <span>Capabilities</span><strong>{html_escape(capabilities)}</strong>
               </div>
-            </article>
+              <h4>Available Calls</h4>
+              <div class="table-wrap">
+                <table>
+                  <tbody>{''.join(action_rows_html)}</tbody>
+                </table>
+              </div>
+              <h4>curl Examples</h4>
+              <pre><code>GATEWAY="http://10.42.0.1:8080"
+{html_escape(curl_examples)}</code></pre>
+              <p class="muted">Change <code>GATEWAY</code> if you access the Jetson through another IP.</p>
+            </section>
             """
         )
 
@@ -198,19 +272,27 @@ def index() -> Response:
 <title>Jetson Device Gateway</title>
 <style>
 body{{margin:0;background:#f6f7f9;color:#172033;font-family:Arial,Helvetica,sans-serif;}}
-header{{background:#18212f;color:white;padding:18px 22px;}}
+header{{background:#18212f;color:white;padding:16px 22px;}}
 header h1{{margin:0 0 4px;font-size:24px;}}
 header p{{margin:0;color:#cbd5e1;}}
-main{{display:grid;gap:16px;padding:18px;}}
+main{{display:grid;gap:14px;padding:18px;max-width:1240px;margin:0 auto;}}
 section{{background:white;border:1px solid #dfe3ea;border-radius:8px;padding:14px;box-shadow:0 1px 3px rgba(10,20,30,.06);}}
 h2{{margin:0 0 12px;font-size:18px;}}
 .summary{{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:12px;}}
 .stat{{background:white;border:1px solid #dfe3ea;border-radius:8px;padding:14px;}}
 .stat strong{{display:block;font-size:28px;}}
-.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;}}
+.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;}}
 .item{{border:1px solid #e5e9f0;border-radius:7px;padding:10px;background:#fafbfc;}}
 .item h3{{margin:0 0 6px;font-size:15px;}}
 .item p{{margin:4px 0;color:#526071;}}
+.device-grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;}}
+.device-card{{border:1px solid #e0e6ef;border-radius:8px;background:#fff;padding:12px;display:grid;gap:5px;text-align:left;color:#172033;font:inherit;min-height:118px;}}
+.device-card.clickable{{cursor:pointer;box-shadow:0 1px 2px rgba(10,20,30,.05);}}
+.device-card.clickable:hover{{border-color:#8fb6ff;background:#f7fbff;}}
+.device-card.disabled{{opacity:.62;cursor:not-allowed;background:#f4f5f7;}}
+.device-card span{{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}}
+.device-top{{display:flex!important;align-items:center;justify-content:space-between;gap:8px;}}
+.muted{{color:#667385;}}
 .links{{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}}
 a{{color:#1d5fd1;text-decoration:none;}}
 .links a{{background:#eef4ff;border:1px solid #c9dcff;border-radius:5px;padding:5px 8px;}}
@@ -219,11 +301,25 @@ th,td{{border-bottom:1px solid #e5e9f0;padding:8px;text-align:left;vertical-alig
 th{{color:#526071;font-size:12px;text-transform:uppercase;}}
 td span{{color:#667385;font-size:12px;}}
 code{{font-family:Menlo,Consolas,monospace;font-size:13px;}}
+pre{{background:#101827;color:#dbeafe;border-radius:7px;padding:10px;overflow:auto;}}
+details summary{{cursor:pointer;font-weight:700;}}
 .pill{{display:inline-block;border-radius:999px;padding:3px 8px;font-weight:700;font-size:12px;}}
 .online{{background:#dff7e8;color:#17643a;}}
 .stale{{background:#fff1d6;color:#8a5700;}}
 .offline{{background:#ffe2e2;color:#9b1c1c;}}
 .table-wrap{{overflow-x:auto;}}
+.modal{{position:fixed;inset:0;background:rgba(15,23,42,.55);display:none;align-items:center;justify-content:center;padding:18px;z-index:50;}}
+.modal.open{{display:flex;}}
+.modal-card{{background:white;border-radius:9px;box-shadow:0 24px 64px rgba(0,0,0,.28);width:min(860px,100%);max-height:88vh;overflow:auto;}}
+.modal-head{{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid #e5e9f0;}}
+.modal-body{{padding:14px;}}
+.modal button{{border:1px solid #cfd8e6;background:#f7f9fc;border-radius:5px;padding:6px 10px;cursor:pointer;}}
+.modal-panel{{display:block;background:transparent;border:0;box-shadow:none;padding:0;}}
+.modal-panel h3{{margin:0 0 10px;font-size:20px;}}
+.modal-panel h4{{margin:16px 0 8px;}}
+.meta-grid{{display:grid;grid-template-columns:110px minmax(0,1fr);gap:7px 10px;font-size:14px;}}
+.meta-grid span{{color:#667385;}}
+.meta-grid strong{{min-width:0;overflow-wrap:anywhere;}}
 @media(max-width:760px){{.summary{{grid-template-columns:repeat(2,minmax(0,1fr));}}}}
 </style>
 </head>
@@ -241,35 +337,57 @@ code{{font-family:Menlo,Consolas,monospace;font-size:13px;}}
   </div>
 
   <section>
-    <h2>Cameras</h2>
-    <div class="grid">{''.join(camera_cards_html) or '<p>No cameras registered yet.</p>'}</div>
-  </section>
-
-  <section>
-    <h2>Sensors</h2>
-    <div class="grid">{''.join(sensor_cards_html) or '<p>No sensor readings yet.</p>'}</div>
-  </section>
-
-  <section>
     <h2>Devices</h2>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Device</th><th>Type</th><th>IP</th><th>Capabilities</th><th>Last Seen</th><th>Status</th></tr></thead>
-        <tbody>{''.join(device_rows_html) or '<tr><td colspan="6">No devices registered yet.</td></tr>'}</tbody>
-      </table>
-    </div>
+    <div class="device-grid">{''.join(device_cards_html) or '<p>No devices registered yet.</p>'}</div>
   </section>
 
   <section>
-    <h2>API Endpoints</h2>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
-        <tbody>{endpoint_rows_html}</tbody>
-      </table>
-    </div>
+    <details>
+      <summary>Latest sensor readings</summary>
+      <div class="grid" style="margin-top:12px">{''.join(sensor_cards_html) or '<p>No sensor readings yet.</p>'}</div>
+    </details>
+  </section>
+
+  <section>
+    <details>
+      <summary>API endpoint reference</summary>
+      <div class="table-wrap" style="margin-top:12px">
+        <table>
+          <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
+          <tbody>{endpoint_rows_html}</tbody>
+        </table>
+      </div>
+    </details>
   </section>
 </main>
+<div id="device-modal" class="modal" onclick="closeDeviceModal(event)">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <strong id="modal-title">Device API</strong>
+      <button type="button" onclick="closeDeviceModal()">Close</button>
+    </div>
+    <div id="modal-body" class="modal-body"></div>
+  </div>
+</div>
+<div id="modal-source" hidden>{''.join(modal_sections_html)}</div>
+<script>
+const modal = document.getElementById('device-modal');
+const modalBody = document.getElementById('modal-body');
+function openDeviceModal(id) {{
+  const source = document.getElementById(id);
+  if (!source) return;
+  modalBody.innerHTML = source.innerHTML;
+  modal.classList.add('open');
+}}
+function closeDeviceModal(event) {{
+  if (event && event.target !== modal) return;
+  modal.classList.remove('open');
+  modalBody.innerHTML = '';
+}}
+document.addEventListener('keydown', event => {{
+  if (event.key === 'Escape') closeDeviceModal();
+}});
+</script>
 </body>
 </html>"""
     return Response(content=html_body, media_type="text/html")
