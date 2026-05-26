@@ -23,6 +23,7 @@ Internet / campus / hotspot
 Jetson Orin Nano
   - Docker services
   - device gateway on port 8080
+  - gateway container uses host networking
   - SQLite device/sensor DB
   - registration, sensor, and camera proxy API
   - USB WiFi dongle as ESP AP
@@ -43,6 +44,10 @@ Planned services:
 - local database for device registry and sensor readings
 - single HTTP device gateway for registration, lookup, camera proxying, and sensor readings
 - optional dashboard/debug endpoint
+
+The Jetson Docker compose uses host networking for the device gateway. This is
+intentional: the gateway must reach ESP camera streams on `10.42.0.0/24` and
+serve clients through the Jetson's upstream network IP at the same time.
 
 Suggested private network:
 

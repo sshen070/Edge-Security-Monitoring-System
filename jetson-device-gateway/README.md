@@ -72,6 +72,9 @@ From the repo root, run the Jetson service:
 docker compose -f docker-compose.jetson.yml up --build
 ```
 
+The Jetson compose file uses host networking so the gateway can reach ESP
+devices on `10.42.0.0/24` and still expose `:8080` on the Jetson's upstream IP.
+
 The SQLite database is stored at:
 
 ```text
