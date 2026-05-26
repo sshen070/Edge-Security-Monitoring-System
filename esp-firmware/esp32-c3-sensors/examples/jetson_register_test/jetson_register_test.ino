@@ -26,9 +26,23 @@ const uint32_t WIFI_TIMEOUT_MS = 30000;
 const uint32_t REGISTER_INTERVAL_MS = 60000;
 const uint32_t READING_INTERVAL_MS = 5000;
 
+#ifdef LED_BUILTIN
+const int STATUS_LED_PIN = LED_BUILTIN;
+#else
+const int STATUS_LED_PIN = -1;
+#endif
+const bool STATUS_LED_ACTIVE_LOW = true;
+
 static uint32_t lastRegisterMs = 0;
 static uint32_t lastReadingMs = 0;
 static uint32_t bootMs = 0;
+
+static void statusLed(bool on) {
+  if (STATUS_LED_PIN < 0) {
+    return;
+  }
+  digitalWrite(STATUS_LED_PIN, (on ^ STATUS_LED_ACTIVE_LOW) ? HIGH : LOW);
+}
 
 static String macAddress() {
   uint8_t mac[6];
@@ -39,8 +53,9 @@ static String macAddress() {
 }
 
 static bool connectWifi() {
+  statusLed(true);
   WiFi.mode(WIFI_STA);
-  WiFi.setSleep(false);
+  WiFi.setSleep(true);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   Serial.printf("Connecting to %s", WIFI_SSID);
@@ -53,6 +68,7 @@ static bool connectWifi() {
 
   if (WiFi.status() != WL_CONNECTED) {
     Serial.printf("WiFi failed, status=%d\n", WiFi.status());
+    statusLed(false);
     return false;
   }
 
@@ -64,6 +80,7 @@ static bool connectWifi() {
   Serial.println(macAddress());
   Serial.print("RSSI: ");
   Serial.println(WiFi.RSSI());
+  statusLed(false);
   return true;
 }
 
@@ -72,6 +89,7 @@ static bool registerWithJetson() {
     return false;
   }
 
+  statusLed(true);
   HTTPClient http;
   http.begin(REGISTRY_URL);
   http.addHeader("Content-Type", "application/json");
@@ -95,6 +113,7 @@ static bool registerWithJetson() {
     Serial.println(response);
   }
   http.end();
+  statusLed(false);
   return code >= 200 && code < 300;
 }
 
@@ -103,6 +122,7 @@ static bool pushTestReading() {
     return false;
   }
 
+  statusLed(true);
   HTTPClient http;
   http.begin(READING_URL);
   http.addHeader("Content-Type", "application/json");
@@ -121,6 +141,7 @@ static bool pushTestReading() {
     Serial.println(response);
   }
   http.end();
+  statusLed(false);
   return code >= 200 && code < 300;
 }
 
@@ -128,6 +149,10 @@ void setup() {
   Serial.begin(115200);
   delay(1500);
   bootMs = millis();
+  if (STATUS_LED_PIN >= 0) {
+    pinMode(STATUS_LED_PIN, OUTPUT);
+    statusLed(false);
+  }
 
   Serial.println("XIAO ESP32-C3 Jetson register test");
   connectWifi();

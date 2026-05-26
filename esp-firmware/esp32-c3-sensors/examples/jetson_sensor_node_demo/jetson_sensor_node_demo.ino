@@ -36,6 +36,13 @@ const uint32_t HEARTBEAT_PUSH_INTERVAL_MS = 60000;
 const uint32_t EVENT_PUSH_MIN_INTERVAL_MS = 5000;
 const int LIGHT_CHANGE_THRESHOLD = 50;
 
+#ifdef LED_BUILTIN
+const int STATUS_LED_PIN = LED_BUILTIN;
+#else
+const int STATUS_LED_PIN = -1;
+#endif
+const bool STATUS_LED_ACTIVE_LOW = true;
+
 static uint32_t lastRegisterMs = 0;
 static uint32_t lastSampleMs = 0;
 static uint32_t lastPushMs = 0;
@@ -44,6 +51,13 @@ static int latestMotion = LOW;
 static int lastPushedLightRaw = -1;
 static int lastPushedMotion = -1;
 static bool hasPushedReading = false;
+
+static void statusLed(bool on) {
+  if (STATUS_LED_PIN < 0) {
+    return;
+  }
+  digitalWrite(STATUS_LED_PIN, (on ^ STATUS_LED_ACTIVE_LOW) ? HIGH : LOW);
+}
 
 static String macAddress() {
   uint8_t mac[6];
@@ -54,8 +68,9 @@ static String macAddress() {
 }
 
 static bool connectWifi() {
+  statusLed(true);
   WiFi.mode(WIFI_STA);
-  WiFi.setSleep(false);
+  WiFi.setSleep(true);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   Serial.printf("Connecting to %s", WIFI_SSID);
@@ -68,6 +83,7 @@ static bool connectWifi() {
 
   if (WiFi.status() != WL_CONNECTED) {
     Serial.printf("Wi-Fi failed, status=%d\n", WiFi.status());
+    statusLed(false);
     return false;
   }
 
@@ -75,6 +91,7 @@ static bool connectWifi() {
   Serial.println(WiFi.localIP());
   Serial.print("MAC: ");
   Serial.println(macAddress());
+  statusLed(false);
   return true;
 }
 
@@ -103,6 +120,7 @@ static bool registerWithJetson() {
     return false;
   }
 
+  statusLed(true);
   HTTPClient http;
   http.begin(REGISTRY_URL);
   http.addHeader("Content-Type", "application/json");
@@ -128,6 +146,7 @@ static bool registerWithJetson() {
   int code = http.POST(body);
   Serial.printf("Registry POST: %d\n", code);
   http.end();
+  statusLed(false);
   return code >= 200 && code < 300;
 }
 
@@ -136,6 +155,7 @@ static bool pushReadingToJetson() {
     return false;
   }
 
+  statusLed(true);
   HTTPClient http;
   http.begin(SENSOR_READING_URL);
   http.addHeader("Content-Type", "application/json");
@@ -151,6 +171,7 @@ static bool pushReadingToJetson() {
   int code = http.POST(body);
   Serial.printf("Device gateway sensor POST: %d\n", code);
   http.end();
+  statusLed(false);
   bool ok = code >= 200 && code < 300;
   if (ok) {
     lastPushedLightRaw = latestLightRaw;
@@ -181,6 +202,10 @@ void setup() {
   Serial.begin(115200);
   delay(1500);
 
+  if (STATUS_LED_PIN >= 0) {
+    pinMode(STATUS_LED_PIN, OUTPUT);
+    statusLed(false);
+  }
   pinMode(PIR_PIN, INPUT);
   Wire.begin(SDA_PIN, SCL_PIN);
 

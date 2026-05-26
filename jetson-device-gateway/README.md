@@ -83,6 +83,15 @@ jetson-device-gateway/data/devices.db
 
 ## Device Registry API
 
+Developer index:
+
+```text
+http://10.42.0.1:8080/
+```
+
+The root page lists registered devices, camera links, latest sensor readings,
+and the available API endpoints with browser-friendly examples.
+
 Health:
 
 ```sh

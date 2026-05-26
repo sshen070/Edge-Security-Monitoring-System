@@ -29,6 +29,11 @@ Raw MJPEG feed:  http://<ip>:81/stream
 The camera sensor powers on only when capture, stream, or camera-control routes
 need it. After `CAMERA_IDLE_SLEEP_MS` with no active stream or camera request,
 the firmware deinitializes the camera driver to reduce idle heat.
+The camera flash LED defined by `LED_GPIO_NUM` stays off while idle and turns on
+while the camera is in use. Brightness is set by
+`CAMERA_ACTIVITY_LED_INTENSITY`. The red USB/battery charge/status LED on the
+XIAO ESP32S3 Sense is hardware-controlled and is not treated as a firmware user
+LED.
 
 From a Mac or any client that can reach the Jetson but not the ESP private
 subnet, use the gateway proxy:

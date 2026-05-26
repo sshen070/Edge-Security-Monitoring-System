@@ -17,6 +17,7 @@
 #include "img_converters.h"
 #include "esp32-hal-ledc.h"
 #include "sdkconfig.h"
+#include "camera_presets.h"
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
 #include "esp32-hal-log.h"
@@ -28,11 +29,12 @@
 // LED FLASH setup
 #if CONFIG_LED_ILLUMINATOR_ENABLED
 
-#define LED_LEDC_GPIO            22  //configure LED pin
 #define CONFIG_LED_MAX_INTENSITY 255
 
-int led_duty = 0;
+int led_duty = CAMERA_ACTIVITY_LED_INTENSITY;
+int led_gpio = 22;
 bool isStreaming = false;
+static volatile uint8_t active_led_users = 0;
 
 #endif
 
@@ -55,13 +57,31 @@ extern void cameraUseBegin();
 extern void cameraUseEnd();
 extern void noteCameraActivity();
 
+#if CONFIG_LED_ILLUMINATOR_ENABLED
+void enable_led(bool en);
+#endif
+
 class CameraUseGuard {
 public:
   CameraUseGuard() {
     cameraUseBegin();
+#if CONFIG_LED_ILLUMINATOR_ENABLED
+    if (CAMERA_ACTIVITY_LED_INTENSITY > 0) {
+      active_led_users++;
+      enable_led(true);
+    }
+#endif
   }
 
   ~CameraUseGuard() {
+#if CONFIG_LED_ILLUMINATOR_ENABLED
+    if (active_led_users > 0) {
+      active_led_users--;
+    }
+    if (active_led_users == 0) {
+      enable_led(false);
+    }
+#endif
     cameraUseEnd();
   }
 };
@@ -119,7 +139,7 @@ void enable_led(bool en) {  // Turn LED On or Off
   if (en && isStreaming && (led_duty > CONFIG_LED_MAX_INTENSITY)) {
     duty = CONFIG_LED_MAX_INTENSITY;
   }
-  ledcWrite(LED_LEDC_GPIO, duty);
+  ledcWrite(led_gpio, duty);
   //ledc_set_duty(CONFIG_LED_LEDC_SPEED_MODE, CONFIG_LED_LEDC_CHANNEL, duty);
   //ledc_update_duty(CONFIG_LED_LEDC_SPEED_MODE, CONFIG_LED_LEDC_CHANNEL);
   log_i("Set LED intensity to %d", duty);
@@ -386,10 +406,8 @@ static esp_err_t capture_handler(httpd_req_t *req) {
   }
 
 #if CONFIG_LED_ILLUMINATOR_ENABLED
-  enable_led(true);
   vTaskDelay(150 / portTICK_PERIOD_MS);  // The LED needs to be turned on ~150ms before the call to esp_camera_fb_get()
   fb = esp_camera_fb_get();              // or it won't be visible in the frame. A better way to do this is needed.
-  enable_led(false);
 #else
   fb = esp_camera_fb_get();
 #endif
@@ -1146,7 +1164,9 @@ void startCameraServer() {
 
 void setupLedFlash(int pin) {
 #if CONFIG_LED_ILLUMINATOR_ENABLED
+  led_gpio = pin;
   ledcAttach(pin, 5000, 8);
+  enable_led(false);
 #else
   log_i("LED flash is disabled -> CONFIG_LED_ILLUMINATOR_ENABLED = 0");
 #endif

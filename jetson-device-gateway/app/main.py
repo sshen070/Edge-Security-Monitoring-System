@@ -1,5 +1,7 @@
+import html
 import json
 import os
+from datetime import datetime, timezone
 from typing import Annotated, Optional
 
 import httpx
@@ -38,9 +40,239 @@ def client_ip(request: Request) -> Optional[str]:
 ClientIp = Annotated[Optional[str], Depends(client_ip)]
 
 
+def html_escape(value: object) -> str:
+    return html.escape("" if value is None else str(value), quote=True)
+
+
+def device_status_label(last_seen_at: Optional[str]) -> tuple[str, str]:
+    if not last_seen_at:
+        return "Unknown", "offline"
+    try:
+        last_seen = datetime.fromisoformat(last_seen_at)
+        if last_seen.tzinfo is None:
+            last_seen = last_seen.replace(tzinfo=timezone.utc)
+        age_seconds = (datetime.now(timezone.utc) - last_seen).total_seconds()
+    except ValueError:
+        return "Unknown", "offline"
+    if age_seconds < 30:
+        return "Online", "online"
+    if age_seconds < 180:
+        return "Stale", "stale"
+    return "Offline", "offline"
+
+
+def example_endpoint_path(path: str, devices: list[dict], cameras: list[dict], sensors: list[dict]) -> str:
+    if "{device_id}" not in path:
+        return path
+    if path.startswith("/api/cameras/") and cameras:
+        return path.replace("{device_id}", cameras[0]["device_id"])
+    if path.startswith("/api/sensors/") and sensors:
+        return path.replace("{device_id}", sensors[0]["device_id"])
+    if path.startswith("/api/devices/") and devices:
+        return path.replace("{device_id}", devices[0]["device_id"])
+    return path
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+@app.get("/")
+def index() -> Response:
+    with db_session() as db:
+        device_rows = db.execute("SELECT * FROM devices ORDER BY last_seen_at DESC").fetchall()
+        devices = [row_to_device(row) for row in device_rows]
+        reading_rows = db.execute(
+            """
+            SELECT r.*
+            FROM sensor_readings r
+            INNER JOIN (
+                SELECT device_id, MAX(id) AS max_id
+                FROM sensor_readings
+                GROUP BY device_id
+            ) latest ON latest.max_id = r.id
+            ORDER BY r.received_at DESC
+            """
+        ).fetchall()
+        sensors = [row_to_reading(row) for row in reading_rows]
+
+    cameras = [
+        device
+        for device in devices
+        if device.get("device_type") == "esp32-s3-camera" or "camera" in device.get("capabilities", [])
+    ]
+
+    device_rows_html = []
+    for device in devices:
+        label, class_name = device_status_label(device.get("last_seen_at"))
+        capabilities = ", ".join(device.get("capabilities", [])) or "-"
+        device_rows_html.append(
+            f"""
+            <tr>
+              <td><strong>{html_escape(device.get("device_id"))}</strong><br><span>{html_escape(device.get("mac") or "-")}</span></td>
+              <td>{html_escape(device.get("device_type"))}</td>
+              <td>{html_escape(device.get("ip") or "-")}</td>
+              <td>{html_escape(capabilities)}</td>
+              <td>{html_escape(device.get("last_seen_at"))}</td>
+              <td><span class="pill {class_name}">{label}</span></td>
+            </tr>
+            """
+        )
+
+    camera_cards_html = []
+    for camera in cameras:
+        device_id = html_escape(camera["device_id"])
+        camera_cards_html.append(
+            f"""
+            <article class="item">
+              <h3>{device_id}</h3>
+              <p>IP: {html_escape(camera.get("ip") or "-")}</p>
+              <div class="links">
+                <a href="/api/cameras/{device_id}/portal">Portal</a>
+                <a href="/api/cameras/{device_id}/viewer">Viewer</a>
+                <a href="/api/cameras/{device_id}/capture">Capture</a>
+                <a href="/api/cameras/{device_id}/stream">Raw stream</a>
+                <a href="/api/cameras/{device_id}/status">Status</a>
+              </div>
+            </article>
+            """
+        )
+
+    sensor_cards_html = []
+    for sensor in sensors:
+        reading = sensor.get("reading", {})
+        fields = ", ".join(f"{key}: {value}" for key, value in reading.items())
+        device_id = html_escape(sensor["device_id"])
+        sensor_cards_html.append(
+            f"""
+            <article class="item">
+              <h3>{device_id}</h3>
+              <p>{html_escape(fields or "No reading fields")}</p>
+              <p>Received: {html_escape(sensor.get("received_at"))}</p>
+              <div class="links">
+                <a href="/api/sensors/{device_id}/latest">Latest</a>
+                <a href="/api/sensors/{device_id}/readings">History</a>
+              </div>
+            </article>
+            """
+        )
+
+    endpoint_rows = [
+        ("GET", "/health", "Gateway health check"),
+        ("GET", "/api/devices", "List registered ESP devices"),
+        ("GET", "/api/devices/{device_id}", "Get one registered device"),
+        ("POST", "/api/devices/register", "Register or update an ESP device"),
+        ("POST", "/api/devices/{device_id}/heartbeat", "Update device last-seen state"),
+        ("GET", "/api/cameras", "List camera devices"),
+        ("GET", "/api/cameras/{device_id}", "Camera URLs and direct ESP URLs"),
+        ("GET", "/api/cameras/{device_id}/portal", "Gateway-hosted camera settings portal"),
+        ("GET", "/api/cameras/{device_id}/viewer", "Browser MJPEG stream viewer"),
+        ("GET", "/api/cameras/{device_id}/capture", "Proxy raw JPEG capture"),
+        ("GET", "/api/cameras/{device_id}/stream", "Proxy raw MJPEG stream"),
+        ("GET", "/api/cameras/{device_id}/status", "Proxy camera status JSON"),
+        ("GET", "/api/cameras/{device_id}/control?var=quality&val=10", "Proxy camera control call"),
+        ("GET", "/api/sensors", "Latest reading for each sensor"),
+        ("GET", "/api/sensors/{device_id}/latest", "Latest reading for one sensor"),
+        ("GET", "/api/sensors/{device_id}/readings?limit=100", "Sensor reading history"),
+        ("POST", "/api/sensors/{device_id}/readings", "Ingest a sensor reading"),
+        ("DELETE", "/api/sensors/{device_id}/readings", "Clear sensor readings"),
+    ]
+    endpoint_rows_html_parts = []
+    for method, path, description in endpoint_rows:
+        example_path = example_endpoint_path(path, devices, cameras, sensors)
+        if method == "GET":
+            path_html = f'<a href="{html_escape(example_path)}"><code>{html_escape(path)}</code></a>'
+        else:
+            path_html = f"<code>{html_escape(path)}</code>"
+        endpoint_rows_html_parts.append(
+            f"<tr><td><code>{method}</code></td><td>{path_html}</td><td>{html_escape(description)}</td></tr>"
+        )
+    endpoint_rows_html = "\n".join(endpoint_rows_html_parts)
+
+    html_body = f"""<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Jetson Device Gateway</title>
+<style>
+body{{margin:0;background:#f6f7f9;color:#172033;font-family:Arial,Helvetica,sans-serif;}}
+header{{background:#18212f;color:white;padding:18px 22px;}}
+header h1{{margin:0 0 4px;font-size:24px;}}
+header p{{margin:0;color:#cbd5e1;}}
+main{{display:grid;gap:16px;padding:18px;}}
+section{{background:white;border:1px solid #dfe3ea;border-radius:8px;padding:14px;box-shadow:0 1px 3px rgba(10,20,30,.06);}}
+h2{{margin:0 0 12px;font-size:18px;}}
+.summary{{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:12px;}}
+.stat{{background:white;border:1px solid #dfe3ea;border-radius:8px;padding:14px;}}
+.stat strong{{display:block;font-size:28px;}}
+.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px;}}
+.item{{border:1px solid #e5e9f0;border-radius:7px;padding:10px;background:#fafbfc;}}
+.item h3{{margin:0 0 6px;font-size:15px;}}
+.item p{{margin:4px 0;color:#526071;}}
+.links{{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}}
+a{{color:#1d5fd1;text-decoration:none;}}
+.links a{{background:#eef4ff;border:1px solid #c9dcff;border-radius:5px;padding:5px 8px;}}
+table{{width:100%;border-collapse:collapse;font-size:14px;}}
+th,td{{border-bottom:1px solid #e5e9f0;padding:8px;text-align:left;vertical-align:top;}}
+th{{color:#526071;font-size:12px;text-transform:uppercase;}}
+td span{{color:#667385;font-size:12px;}}
+code{{font-family:Menlo,Consolas,monospace;font-size:13px;}}
+.pill{{display:inline-block;border-radius:999px;padding:3px 8px;font-weight:700;font-size:12px;}}
+.online{{background:#dff7e8;color:#17643a;}}
+.stale{{background:#fff1d6;color:#8a5700;}}
+.offline{{background:#ffe2e2;color:#9b1c1c;}}
+.table-wrap{{overflow-x:auto;}}
+@media(max-width:760px){{.summary{{grid-template-columns:repeat(2,minmax(0,1fr));}}}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Jetson Device Gateway</h1>
+  <p>ESP device registry, sensor readings, and S3 camera proxy endpoints.</p>
+</header>
+<main>
+  <div class="summary">
+    <div class="stat"><strong>{len(devices)}</strong>devices</div>
+    <div class="stat"><strong>{len(cameras)}</strong>cameras</div>
+    <div class="stat"><strong>{len(sensors)}</strong>sensor feeds</div>
+    <div class="stat"><strong><a href="/health">ok</a></strong>health</div>
+  </div>
+
+  <section>
+    <h2>Cameras</h2>
+    <div class="grid">{''.join(camera_cards_html) or '<p>No cameras registered yet.</p>'}</div>
+  </section>
+
+  <section>
+    <h2>Sensors</h2>
+    <div class="grid">{''.join(sensor_cards_html) or '<p>No sensor readings yet.</p>'}</div>
+  </section>
+
+  <section>
+    <h2>Devices</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Device</th><th>Type</th><th>IP</th><th>Capabilities</th><th>Last Seen</th><th>Status</th></tr></thead>
+        <tbody>{''.join(device_rows_html) or '<tr><td colspan="6">No devices registered yet.</td></tr>'}</tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>API Endpoints</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Method</th><th>Path</th><th>Purpose</th></tr></thead>
+        <tbody>{endpoint_rows_html}</tbody>
+      </table>
+    </div>
+  </section>
+</main>
+</body>
+</html>"""
+    return Response(content=html_body, media_type="text/html")
 
 
 @app.post("/api/devices/register", response_model=DeviceRead, status_code=status.HTTP_201_CREATED)

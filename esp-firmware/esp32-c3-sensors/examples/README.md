@@ -86,6 +86,10 @@ light changed by at least 50 raw ADC counts
 60 second heartbeat interval elapsed
 ```
 
+The register test and sensor node also use the built-in status LED when
+available. The LED stays off while idle and turns on during WiFi connection or
+gateway POST activity.
+
 ### Output Node
 
 Path:

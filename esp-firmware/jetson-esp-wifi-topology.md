@@ -56,6 +56,7 @@ SSID: ESP-NET
 Subnet: 10.42.0.0/24
 Jetson AP IP: 10.42.0.1
 API base URL: http://10.42.0.1:8080
+Developer index: http://10.42.0.1:8080/
 Camera API: http://10.42.0.1:8080/api/cameras
 Sensor API: http://10.42.0.1:8080/api/sensors
 ```
@@ -127,6 +128,7 @@ docker compose -f docker-compose.jetson.yml up --build
 Verify:
 
 ```sh
+curl http://10.42.0.1:8080/
 curl http://10.42.0.1:8080/health
 curl http://10.42.0.1:8080/api/devices
 ```
@@ -216,6 +218,10 @@ Camera endpoints:
 ```text
 GET /api/cameras
 GET /api/cameras/:device_id
+GET /api/cameras/:device_id/portal
+GET /api/cameras/:device_id/viewer
+GET /api/cameras/:device_id/status
+GET /api/cameras/:device_id/control
 GET /api/cameras/:device_id/capture
 GET /api/cameras/:device_id/stream
 ```

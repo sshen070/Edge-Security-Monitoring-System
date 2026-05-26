@@ -32,3 +32,10 @@ BOARD=c3-hotspot-test   ./esp-firmware/scripts/flash_esp.sh
 ```
 
 Set `PORT=/dev/ttyACM0` if multiple ESP boards are connected.
+
+## Status LED
+
+The register test and sensor node keep the built-in status LED off while idle
+and turn it on during WiFi connection or Jetson gateway POST activity. If a
+specific board's built-in LED polarity differs, adjust `STATUS_LED_ACTIVE_LOW`
+in the sketch.

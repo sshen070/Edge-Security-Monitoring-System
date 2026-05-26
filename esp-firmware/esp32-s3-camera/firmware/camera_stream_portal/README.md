@@ -40,6 +40,16 @@ portal control request initializes the camera again and reapplies
 This reduces idle heat and power draw. Runtime settings changed from the portal
 may reset after an idle sleep because the camera presets are reapplied on wake.
 
+The camera flash LED defined by `LED_GPIO_NUM` is also tied to camera activity.
+It stays off while idle and turns on while capture, stream, or camera-control
+routes are using the camera. Set `CAMERA_ACTIVITY_LED_INTENSITY` in
+`camera_presets.h` to adjust the brightness, or set it to `0` to keep the flash
+LED always off.
+
+The red USB/battery charge/status LED on the XIAO ESP32S3 Sense is
+hardware-controlled and is not a firmware-controlled RGB/user LED. Color changes
+require an external RGB LED or NeoPixel.
+
 ## Raw Endpoints
 
 `/capture` returns a single raw `image/jpeg`.
@@ -144,9 +154,11 @@ X-Camera-Colorbar
 X-Camera-LED
 ```
 
-## Boot Presets
+## Camera Presets
 
-Edit `camera_presets.h` to change the settings that apply at boot.
+Edit `camera_presets.h` to change the settings that apply when the camera
+powers on. Because the camera can sleep while idle, these presets are reapplied
+after each idle wake.
 
 Useful defaults:
 
@@ -176,6 +188,10 @@ const char *DEVICE_REGISTRY_URL = "http://10.42.0.1:8080/api/devices/register";
 After WiFi connects, the camera registers its IP and capabilities with the Jetson Orin Nano device gateway. The same gateway can then proxy:
 
 ```text
+http://10.42.0.1:8080/api/cameras/camera-front-01/portal
+http://10.42.0.1:8080/api/cameras/camera-front-01/viewer
+http://10.42.0.1:8080/api/cameras/camera-front-01/status
+http://10.42.0.1:8080/api/cameras/camera-front-01/control?var=quality&val=10
 http://10.42.0.1:8080/api/cameras/camera-front-01/capture
 http://10.42.0.1:8080/api/cameras/camera-front-01/stream
 ```

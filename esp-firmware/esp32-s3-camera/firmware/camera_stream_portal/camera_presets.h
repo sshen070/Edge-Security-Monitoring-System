@@ -108,6 +108,9 @@
 // Power behavior. Camera driver shuts down after this much idle time with no active stream.
 #define CAMERA_IDLE_SLEEP_MS 60000
 
+// Activity LED behavior. Single-color LED/flash is off when idle and on while the camera is in use.
+#define CAMERA_ACTIVITY_LED_INTENSITY 24  // 0..255. Use 0 to keep it always off.
+
 static inline void applyCameraFeedPreset(sensor_t *sensor) {
   if (!sensor) {
     return;
