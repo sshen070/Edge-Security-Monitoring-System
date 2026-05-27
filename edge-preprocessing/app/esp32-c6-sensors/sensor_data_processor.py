@@ -1,134 +1,73 @@
 import json
-import numpy as np
+import logging
+from pathlib import Path
+
 import paho.mqtt.client as mqtt
-import time
 
-class SensorAnomalyDetector:
-    def __init__(self):
-        # Keep track of previous averages
-        self.prev = None
+from detector.anomaly_detector import AnomalyDetector
 
-        # Moving averages (baseline)
-        self.avg = None
-        self.alpha = 0.2  # smoothing factor
+# Logging Setup
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(exist_ok=True)
 
-        # Anomaly Thresholds ~ modify based on environment
-        self.LIGHT_THRESHOLD = 80
-        self.TEMP_THRESHOLD = 1.0
-        self.RSSI_THRESHOLD = -75
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.FileHandler(LOG_DIR / "sensor_events.log"),
+        logging.StreamHandler()
+    ]
+)
 
-        # Motion state tracking
-        self.motion_state = 0
-        self.motion_event_cooldown = 2  # seconds
-        self.last_motion_time = 0
-
-    # Keep track of temperature & light value after detection 
-    def update_avg(self, data):
-        values = np.array([
-            data["temperature"],
-            data["light"]
-        ])
-
-        if self.avg is None:
-            self.avg = values
-        else:
-            self.avg = self.alpha * values + (1 - self.alpha) * self.avg
-
-        return self.avg
-
-    # Detection algorithm
-    def detect(self, data):
-        events = []
-
-        # Initialize baseline
-        if self.prev is None:
-            self.prev = data
-            self.update_avg(data)
-            return events
-
-        self.update_avg(data)
-
-        # Light Anomaly
-        light_delta = abs(data["light"] - self.avg[1])
-        if light_delta > self.LIGHT_THRESHOLD:
-            events.append({
-                "type": "light_anomaly",
-                "delta": float(light_delta),
-                "value": data["light"]
-            })
-
-        # Temperature Anomoly
-        temp_delta = abs(data["temperature"] - self.avg[0])
-        if temp_delta > self.TEMP_THRESHOLD:
-            events.append({
-                "type": "temperature_anomaly",
-                "delta": float(temp_delta),
-                "value": data["temperature"]
-            })
-
-        # Motion Detection
-        current_time = time.time()
-
-        if data["motion"] == 1:
-            if (current_time - self.last_motion_time) > self.motion_event_cooldown:
-                events.append({
-                    "type": "motion_detected"
-                })
-                self.last_motion_time = current_time
-
-        # # RSSI Comparision ~ Omitted Temporarily
-        # if data["rssi"] < self.RSSI_THRESHOLD:
-        #     events.append({
-        #         "type": "weak_signal",
-        #         "rssi": data["rssi"]
-        #     })
-
-        # Update previous
-        self.prev = data
-
-        return events
+# Load thresholds from config file
+with open("config/thresholds.json", "r") as f:
+    config = json.load(f)
 
 
-detector = SensorAnomalyDetector()
+# Initialize detector
+detector = AnomalyDetector(config)
 
-MQTT_BROKER = "x.x.x.x"   # Change to Jetson IP
-MQTT_TOPIC = "sensors/esp32c3"
-
+MQTT_BROKER = "mosquitto"
+MQTT_PORT = 1883
+MQTT_TOPIC = "sensor/data"
 
 def on_connect(client, userdata, flags, rc):
-    print("Connected to MQTT broker:", rc)
+    logging.info(f"Connected to MQTT broker: {rc}")
     client.subscribe(MQTT_TOPIC)
+    logging.info(f"Subscribed to topic: {MQTT_TOPIC}")
 
 
 def on_message(client, userdata, msg):
     try:
+        # Convert data into usable format
         payload = msg.payload.decode("utf-8")
         data = json.loads(payload)
 
+        logging.info(f"Received sensor data: {data}")
         events = detector.detect(data)
 
         if events:
-            print("\nEVENT DETECTED:")
-            for e in events:
-                print("  ->", e)
-
-            # Forward to cloud / logging system (in development)
-            # forward_events(events)
+            logging.warning("ANOMALY EVENTS DETECTED")
+            
+            for event in events:
+                logging.warning(event)
 
         else:
-            print("No event:", data)
+            logging.info("No anomalies detected")
 
     except Exception as e:
-        print("Error processing message:", e)
+        logging.error(f"Processing error: {e}")
 
 
 def main():
     client = mqtt.Client()
+
     client.on_connect = on_connect
     client.on_message = on_message
 
-    print("Connecting to MQTT broker...")
-    client.connect(MQTT_BROKER, 1883, 60)
+    logging.info("Connecting to MQTT broker...")
+
+    client.connect(MQTT_BROKER, MQTT_PORT, 60)
 
     client.loop_forever()
 
