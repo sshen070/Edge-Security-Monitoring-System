@@ -14,12 +14,16 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 
+#include <sensors.h>
+
 // Connenct ESP32-C3 to hotspot
 const char *HOTSPOT_SSID = "yourHotspotName";
 const char *HOTSPOT_PASSWORD = "yourHotspotPassword";
 
 // Connnect ESP32-C3 to server (jetson nano)
 const char *MQTT_SERVER = "x.x.x.x"; // Replace with jetson IP
+const int MQTT_PORT = 1883;
+
 const char *MQTT_TOPIC = "sensors/esp32c3";
 
 // Client object
@@ -27,6 +31,7 @@ WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
 const uint32_t CONNECT_TIMEOUT_MS = 30000;
+const uint32_t PUBLISH_INTERVAL_MS = 5000;
 
 uint32_t lastPublish = 0;
 
@@ -117,8 +122,8 @@ static bool connectHotspot() {
       // Serial.println(WiFi.gatewayIP());
       // // Serial.print("DNS: ");
       // // Serial.println(WiFi.dnsIP());
-      // Serial.print("RSSI: ");
-      // Serial.println(WiFi.RSSI());
+      Serial.print("RSSI: ");
+      Serial.println(WiFi.RSSI());
       return true;
     }
 
@@ -165,7 +170,7 @@ void setup() {
     Serial.println("Retry Wi-Fi...");
   }
 
-  mqttClient.setServer(MQTT_SERVER, 1883);
+  mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   connectMQTT();
 }
 
@@ -184,20 +189,14 @@ void loop() {
   mqttClient.loop();
 
   // Publish every 5 seconds
-  if (millis() - lastPublish > 5000) {
+  if (millis() - lastPublish > PUBLISH_INTERVAL_MS) {
     lastPublish = millis();
 
-    // Temporary Simulation
-    float temperature = random(200, 350) / 10.0;
-    int motion = random(0, 2);
-    int lightLevel = random(0, 1024);
+    // Read real sensor data
+    SensorData data = readSensors();
 
-    String payload = "{";
-    payload += "\"temperature\":" + String(temperature, 1) + ",";
-    payload += "\"motion\":" + String(motion) + ",";
-    payload += "\"light\":" + String(lightLevel) + ",";
-    payload += "\"rssi\":" + String(WiFi.RSSI());
-    payload += "}";
+    String payload = buildPayload(data);
+    Serial.println();
 
     Serial.println("Publishing:");
     Serial.println(payload);
