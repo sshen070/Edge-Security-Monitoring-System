@@ -1,7 +1,7 @@
 import time
 import numpy as np
 
-class SensorAnomalyDetector:
+class AnomalyDetector:
     def __init__(self, config):
         # Keep track of previous averages
         self.prev = None

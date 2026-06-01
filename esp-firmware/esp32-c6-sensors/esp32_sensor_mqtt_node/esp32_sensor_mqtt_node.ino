@@ -150,6 +150,10 @@ void connectMQTT() {
     } 
     
     else {
+      // Debug details
+      Serial.printf("MQTT SERVER: %s\n", MQTT_SERVER);
+      Serial.printf("WIFI RSSI: %d\n", WiFi.RSSI());
+      
       Serial.print("MQTT failed, rc=");
       Serial.print(mqttClient.state());
       Serial.println(" retrying...");
