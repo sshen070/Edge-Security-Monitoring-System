@@ -4,16 +4,16 @@
 #include <Arduino.h>
 
 
-const int PIR_PIN = D0;
-const int LIGHT_PIN = A0;
+const int LIGHT_PIN = 3;
 
 struct SensorData {
 
-  float temperature;
+//  float temperature;
   int light;
-  bool motion;
+//  bool motion;
   int rssi;
   uint32_t uptime;
+  uint32_t connection_time_ms;
 };
 
 void initSensors();
@@ -21,5 +21,7 @@ void initSensors();
 SensorData readSensors();
 
 String buildPayload(const SensorData &data);
+
+void markConnectionStart();
 
 #endif

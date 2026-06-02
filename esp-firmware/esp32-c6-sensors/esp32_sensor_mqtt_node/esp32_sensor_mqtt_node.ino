@@ -17,14 +17,14 @@
 #include <sensors.h>
 
 // Connenct ESP32-C3 to hotspot
-const char *HOTSPOT_SSID = "yourHotspotName";
-const char *HOTSPOT_PASSWORD = "yourHotspotPassword";
+const char *HOTSPOT_SSID = "NJSLAPTOP 5186";
+const char *HOTSPOT_PASSWORD = "aaaaaaaa";
 
 // Connnect ESP32-C3 to server (jetson nano)
-const char *MQTT_SERVER = "x.x.x.x"; // Replace with jetson IP
+const char *MQTT_SERVER = "192.168.137.172"; // Replace with jetson IP
 const int MQTT_PORT = 1883;
 
-const char *MQTT_TOPIC = "sensors/esp32c3";
+const char *MQTT_TOPIC = "sensors/data";
 
 // Client object
 WiFiClient espClient;
@@ -112,14 +112,15 @@ static bool connectHotspot() {
 
     if (status == WL_CONNECTED) {
       Serial.println("Wi-Fi connected");
+      
+      markConnectionStart();
       Serial.println(WiFi.localIP());
-
-      // Serial.println();
-      // Serial.println("Connected to hotspot.");
-      // Serial.print("IP address: ");
-      // Serial.println(WiFi.localIP());
-      // Serial.print("Gateway: ");
-      // Serial.println(WiFi.gatewayIP());
+       Serial.println();
+       Serial.println("Connected to hotspot.");
+       Serial.print("IP address: ");
+       Serial.println(WiFi.localIP());
+       Serial.print("Gateway: ");
+       Serial.println(WiFi.gatewayIP());
       // // Serial.print("DNS: ");
       // // Serial.println(WiFi.dnsIP());
       Serial.print("RSSI: ");
@@ -143,16 +144,24 @@ void connectMQTT() {
     mac.replace(":", "");
     String clientId = "ESP32C3-" + mac;    
     
-    Serial.println("Connecting to MQTT...");
+    Serial.println("\nConnecting to MQTT...");
 
     if (mqttClient.connect(clientId.c_str())) {
       Serial.println("MQTT connected.");
     } 
     
     else {
+<<<<<<< HEAD
       // Debug details
       Serial.printf("MQTT SERVER: %s\n", MQTT_SERVER);
       Serial.printf("WIFI RSSI: %d\n", WiFi.RSSI());
+=======
+      // Debug Info
+      Serial.print("MQTT Server: \n");
+      Serial.println(MQTT_SERVER);
+      Serial.print("WIFI RSSI: \n");
+      Serial.println(WiFi.RSSI());
+>>>>>>> 288a239 (Implemnted esp32c6 data transmission using MQTT)
       
       Serial.print("MQTT failed, rc=");
       Serial.print(mqttClient.state());
