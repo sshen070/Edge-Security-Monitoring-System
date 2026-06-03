@@ -43,20 +43,22 @@ def on_message(client, userdata, msg):
         payload = msg.payload.decode("utf-8")
         data = json.loads(payload)
 
-        logging.info(f"Received sensor data: {data}")
+        logging.debug(f"Received sensor data: {data}")
         events = detector.detect(data)
 
         if events:
             logging.warning("ANOMALY EVENTS DETECTED")
             
             for event in events:
-                logging.warning(event)
-
+                logging.warning(
+                    "EVENT %s",
+                    json.dumps(event)
+                )
         else:
             logging.info("No anomalies detected")
 
     except Exception as e:
-        logging.error(f"Processing error: {e}")
+        logging.exception(f"Processing error: {e}")
 
 
 def main():

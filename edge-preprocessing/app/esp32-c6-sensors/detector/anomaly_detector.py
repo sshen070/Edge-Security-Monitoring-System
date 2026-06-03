@@ -1,90 +1,105 @@
 import time
-import numpy as np
 
 class AnomalyDetector:
     def __init__(self, config):
-        # Keep track of previous averages
-        self.prev = None
 
         # Moving averages (baseline)
-        self.avg = None
+        self.avg_light = None
+        self.avg_rssi = None
         self.alpha = config["moving_average_alpha"]
 
         # Anomaly Thresholds ~ modify based on environment
         self.light_threshold = config["light_threshold"]
-        self.temperature_threshold = config["temperature_threshold"]
         self.rssi_threshold = config["rssi_threshold"]
 
         # Motion state tracking
+        self.motion_threshold = config["motion_threshold"]
         self.motion_cooldown = config["motion_cooldown_seconds"]
         self.last_motion_time = 0
 
-    # Keep track of temperature & light value after detection 
+
+    # Keep track of light & rssi value after detection 
     def update_avg(self, data):
+        light = data["light"]
+        rssi = data["rssi"]
 
-        values = np.array([
-            data["temperature"],
-            data["light"]
-        ])
-
-        if self.avg is None:
-            self.avg = values
+        if self.avg_light is None:
+            self.avg_light = light
+            self.avg_rssi = rssi
         else:
-            self.avg = (
-                self.alpha * values
-                + (1 - self.alpha) * self.avg
+            self.avg_light = (self.alpha * light
+                + (1 - self.alpha) * self.avg_light
             )
 
-        return self.avg
+            self.avg_rssi = (self.alpha * rssi
+                + (1 - self.alpha) * self.avg_rssi
+            )
+
 
     # Detection algorithm
     def detect(self, data):
         events = []
 
         # Initialize baseline
-        if self.prev is None:
-            self.prev = data
+        if self.avg_light is None:
             self.update_avg(data)
             return events
 
-        self.update_avg(data)
+        current_time = time.time()
 
-        # Light Anomaly
-        light_delta = abs(data["light"] - self.avg[1])
-        if light_delta > self.light_threshold:
+        light_delta = abs(data["light"] - self.avg_light)
+
+        # If light anomolgy & above motion threshold --> motion
+        if (light_delta > self.motion_threshold and (current_time - self.last_motion_time) > self.motion_cooldown):
             events.append({
-                "type": "light_anomaly",
+                "type": "motion_detected",
                 "delta": float(light_delta),
                 "value": data["light"]
             })
 
-        # Temperature Anomoly
-        temp_delta = abs(data["temperature"] - self.avg[0])
-        if temp_delta > self.temperature_threshold:
+        self.last_motion_time = current_time
+
+        # Significant lighting anomaly (light switched on/off) 
+        if (light_delta > self.light_threshold): 
+            events.append({ 
+                "type": "light_anomaly", 
+                "delta": float(light_delta), 
+                "value": data["light"] 
+            })
+        
+        # Weak Signal (RSSI)
+        if data["rssi"] < self.rssi_threshold:
             events.append({
-                "type": "temperature_anomaly",
-                "delta": float(temp_delta),
-                "value": data["temperature"]
+                "type": "weak_signal",
+                "rssi": data["rssi"]
             })
 
-        # Motion Detection
-        current_time = time.time()
+        # Device reconnection (connection time < 10 sec)
+        if data["connection_time_ms"] < 10000: 
+            events.append({ 
+                "type": "wifi_reconnected", 
+                "connection_time_ms": data["connection_time_ms"] 
+            })
 
-        if data["motion"] == 1:
-            if (current_time - self.last_motion_time) > self.motion_cooldown:
-                events.append({
-                    "type": "motion_detected"
-                })
-                self.last_motion_time = current_time
-
-        # # RSSI Comparision ~ Omitted Temporarily
-        # if data["rssi"] < self.rssi_threshold:
+        # # Temperature Anomoly
+        # temp_delta = abs(data["temperature"] - self.avg_rssi)
+        # if temp_delta > self.temperature_threshold:
         #     events.append({
-        #         "type": "weak_signal",
-        #         "rssi": data["rssi"]
+        #         "type": "temperature_anomaly",
+        #         "delta": float(temp_delta),
+        #         "value": data["temperature"]
         #     })
 
+        # Motion Detection
+        # if data["motion"] > self.motion_threshold:
+        #     if (current_time - self.last_motion_time) > self.motion_cooldown:
+        #         events.append({
+        #             "type": "motion_detected"
+        #         })
+        #         self.last_motion_time = current_time
+
+
         # Update previous
-        self.prev = data
+        self.update_avg(data)
 
         return events
