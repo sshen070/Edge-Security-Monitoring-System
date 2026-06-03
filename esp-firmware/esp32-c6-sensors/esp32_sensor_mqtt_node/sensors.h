@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-const int LIGHT_PIN = 3;
+const int LIGHT_PIN = A0;
 
 struct SensorData {
 

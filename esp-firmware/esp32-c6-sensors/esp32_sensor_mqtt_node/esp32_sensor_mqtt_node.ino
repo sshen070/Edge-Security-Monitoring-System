@@ -17,11 +17,11 @@
 #include <sensors.h>
 
 // Connenct ESP32-C3 to hotspot
-const char *HOTSPOT_SSID = "NJSLAPTOP 5186";
-const char *HOTSPOT_PASSWORD = "aaaaaaaa";
+const char *HOTSPOT_SSID = "Jay's PC";
+const char *HOTSPOT_PASSWORD = "bingbong";
 
 // Connnect ESP32-C3 to server (jetson nano)
-const char *MQTT_SERVER = "192.168.137.172"; // Replace with jetson IP
+const char *MQTT_SERVER = "192.168.137.130"; // Replace with jetson IP
 const int MQTT_PORT = 1883;
 
 const char *MQTT_TOPIC = "sensors/data";
