@@ -1,0 +1,196 @@
+2026-06-01 19:15:58,661 [INFO] Connecting to MQTT broker...
+2026-06-01 19:15:58,703 [INFO] Connected to MQTT broker: 0
+2026-06-01 19:15:58,703 [INFO] Subscribed to topic: sensors/esp32c3
+2026-06-01 19:20:51,955 [INFO] Connecting to MQTT broker...
+2026-06-01 19:20:51,998 [INFO] Connected to MQTT broker: 0
+2026-06-01 19:20:51,999 [INFO] Subscribed to topic: sensors/esp32c6
+2026-06-01 18:17:26,287 [INFO] Connecting to MQTT broker...
+2026-06-01 18:17:27,410 [INFO] Connecting to MQTT broker...
+2026-06-01 18:17:28,468 [INFO] Connecting to MQTT broker...
+2026-06-01 18:17:29,811 [INFO] Connecting to MQTT broker...
+2026-06-01 18:17:31,447 [INFO] Connecting to MQTT broker...
+2026-06-01 18:17:33,849 [INFO] Connecting to MQTT broker...
+2026-06-01 18:17:37,839 [INFO] Connecting to MQTT broker...
+2026-06-01 21:28:22,621 [INFO] Connecting to MQTT broker...
+2026-06-01 21:28:40,200 [INFO] Connecting to MQTT broker...
+2026-06-01 21:29:07,832 [INFO] Connecting to MQTT broker...
+2026-06-01 21:29:59,986 [INFO] Connecting to MQTT broker...
+2026-06-01 21:31:00,813 [INFO] Connecting to MQTT broker...
+2026-06-01 21:32:01,669 [INFO] Connecting to MQTT broker...
+2026-06-01 21:33:10,478 [INFO] Connecting to MQTT broker...
+2026-06-01 21:34:15,250 [INFO] Connecting to MQTT broker...
+2026-06-01 21:35:24,165 [INFO] Connecting to MQTT broker...
+2026-06-01 21:36:25,080 [INFO] Connecting to MQTT broker...
+2026-06-01 21:37:32,146 [INFO] Connecting to MQTT broker...
+2026-06-01 21:38:33,000 [INFO] Connecting to MQTT broker...
+2026-06-01 21:39:41,938 [INFO] Connecting to MQTT broker...
+2026-06-01 22:23:41,706 [INFO] Connecting to MQTT broker...
+2026-06-01 22:23:41,712 [INFO] Connected to MQTT broker: 0
+2026-06-01 22:23:41,713 [INFO] Subscribed to topic: sensors/esp32c6
+2026-06-01 22:27:30,628 [INFO] Connected to MQTT broker: 0
+2026-06-01 22:27:30,629 [INFO] Subscribed to topic: sensors/esp32c6
+2026-06-01 22:32:24,551 [INFO] Connecting to MQTT broker...
+2026-06-01 22:32:24,565 [INFO] Connected to MQTT broker: 0
+2026-06-01 22:32:24,566 [INFO] Subscribed to topic: sensors/data
+2026-06-01 22:33:55,177 [INFO] Connecting to MQTT broker...
+2026-06-01 22:33:55,183 [INFO] Connected to MQTT broker: 0
+2026-06-01 22:33:55,183 [INFO] Subscribed to topic: sensors/data
+2026-06-03 17:39:50,975 [INFO] Connecting to MQTT broker...
+2026-06-03 17:39:51,017 [INFO] Connected to MQTT broker: 0
+2026-06-03 17:39:51,017 [INFO] Subscribed to topic: sensors/esp32c6
+2026-06-03 17:42:59,219 [INFO] Connecting to MQTT broker...
+2026-06-03 17:42:59,231 [INFO] Connected to MQTT broker: 0
+2026-06-03 17:42:59,232 [INFO] Subscribed to topic: sensors/esp32c6
+2026-06-03 17:52:46,466 [INFO] Connecting to MQTT broker...
+2026-06-03 17:52:46,480 [INFO] Connected to MQTT broker: 0
+2026-06-03 17:52:46,480 [INFO] Subscribed to topic: sensors/esp32c6
+2026-06-03 18:12:59,227 [INFO] Connecting to MQTT broker...
+2026-06-03 18:12:59,240 [INFO] Connected to MQTT broker: 0
+2026-06-03 18:12:59,240 [INFO] Subscribed to topic: sensors/esp32c6
+2026-06-03 18:16:14,981 [INFO] Connecting to MQTT broker...
+2026-06-03 18:16:14,992 [INFO] Connected to MQTT broker: 0
+2026-06-03 18:16:14,993 [INFO] Subscribed to topic: sensors/esp32c6
+2026-06-03 18:22:03,559 [INFO] Connecting to MQTT broker...
+2026-06-03 18:22:03,571 [INFO] Connected to MQTT broker: 0
+2026-06-03 18:22:03,572 [INFO] Subscribed to topic: sensors/esp32c6
+2026-06-03 18:27:00,603 [INFO] Connecting to MQTT broker...
+2026-06-03 18:27:00,615 [INFO] Connected to MQTT broker: 0
+2026-06-03 18:27:00,616 [INFO] Subscribed to topic: sensors/esp32c6
+2026-06-03 18:28:15,971 [INFO] Connecting to MQTT broker...
+2026-06-03 18:28:15,983 [INFO] Connected to MQTT broker: 0
+2026-06-03 18:28:15,984 [INFO] Subscribed to topic: sensors/esp32c6
+2026-06-03 18:31:26,270 [INFO] Connecting to MQTT broker...
+2026-06-03 18:31:26,284 [INFO] Connected to MQTT broker: 0
+2026-06-03 18:31:26,285 [INFO] Subscribed to topic: sensors/data
+2026-06-03 18:31:27,073 [INFO] No anomalies detected
+2026-06-03 18:31:32,073 [INFO] No anomalies detected
+2026-06-03 18:31:37,073 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:31:37,074 [WARNING] EVENT {"type": "motion_detected", "delta": 54.40000000000009, "value": 618}
+2026-06-03 18:31:42,306 [INFO] No anomalies detected
+2026-06-03 18:31:47,087 [INFO] No anomalies detected
+2026-06-03 18:31:52,329 [INFO] No anomalies detected
+2026-06-03 18:31:57,116 [INFO] No anomalies detected
+2026-06-03 18:32:02,358 [INFO] No anomalies detected
+2026-06-03 18:32:07,370 [INFO] No anomalies detected
+2026-06-03 18:32:12,386 [INFO] No anomalies detected
+2026-06-03 18:32:17,398 [INFO] No anomalies detected
+2026-06-03 18:32:22,098 [INFO] No anomalies detected
+2026-06-03 18:32:27,112 [INFO] No anomalies detected
+2026-06-03 18:32:32,124 [INFO] No anomalies detected
+2026-06-03 18:32:37,139 [INFO] No anomalies detected
+2026-06-03 18:32:42,154 [INFO] No anomalies detected
+2026-06-03 18:32:47,165 [INFO] No anomalies detected
+2026-06-03 18:32:52,089 [INFO] No anomalies detected
+2026-06-03 18:32:57,506 [INFO] No anomalies detected
+2026-06-03 18:33:02,206 [INFO] No anomalies detected
+2026-06-03 18:33:07,222 [INFO] No anomalies detected
+2026-06-03 18:33:12,117 [INFO] No anomalies detected
+2026-06-03 18:33:17,142 [INFO] No anomalies detected
+2026-06-03 18:33:22,260 [INFO] No anomalies detected
+2026-06-03 18:33:27,274 [INFO] No anomalies detected
+2026-06-03 18:33:32,287 [INFO] No anomalies detected
+2026-06-03 18:33:37,301 [INFO] No anomalies detected
+2026-06-03 18:33:42,314 [INFO] No anomalies detected
+2026-06-03 18:33:47,328 [INFO] No anomalies detected
+2026-06-03 18:33:52,346 [INFO] No anomalies detected
+2026-06-03 18:33:57,358 [INFO] No anomalies detected
+2026-06-03 18:34:02,369 [INFO] No anomalies detected
+2026-06-03 18:34:07,165 [INFO] No anomalies detected
+2026-06-03 18:34:12,396 [INFO] No anomalies detected
+2026-06-03 18:34:17,410 [INFO] No anomalies detected
+2026-06-03 18:34:22,423 [INFO] No anomalies detected
+2026-06-03 18:34:31,473 [INFO] Connecting to MQTT broker...
+2026-06-03 18:34:31,486 [INFO] Connected to MQTT broker: 0
+2026-06-03 18:34:31,487 [INFO] Subscribed to topic: sensors/data
+2026-06-03 18:34:31,528 [INFO] No anomalies detected
+2026-06-03 18:34:52,177 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:34:52,178 [WARNING] EVENT {"type": "wifi_reconnected", "connection_time_ms": 1813}
+2026-06-03 18:34:57,208 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:34:57,208 [WARNING] EVENT {"type": "wifi_reconnected", "connection_time_ms": 6814}
+2026-06-03 18:35:02,218 [INFO] No anomalies detected
+2026-06-03 18:35:07,243 [INFO] No anomalies detected
+2026-06-03 18:35:12,246 [INFO] No anomalies detected
+2026-06-03 18:35:17,260 [INFO] No anomalies detected
+2026-06-03 18:35:22,169 [INFO] No anomalies detected
+2026-06-03 18:35:27,287 [INFO] No anomalies detected
+2026-06-03 18:35:32,301 [INFO] No anomalies detected
+2026-06-03 18:35:37,191 [INFO] No anomalies detected
+2026-06-03 18:35:42,327 [INFO] No anomalies detected
+2026-06-03 18:35:47,341 [INFO] No anomalies detected
+2026-06-03 18:35:52,354 [INFO] No anomalies detected
+2026-06-03 18:35:57,368 [INFO] No anomalies detected
+2026-06-03 18:36:02,381 [INFO] No anomalies detected
+2026-06-03 18:36:07,395 [INFO] No anomalies detected
+2026-06-03 18:36:12,408 [INFO] No anomalies detected
+2026-06-03 18:36:17,423 [INFO] No anomalies detected
+2026-06-03 18:36:31,547 [INFO] Connecting to MQTT broker...
+2026-06-03 18:36:31,560 [INFO] Connected to MQTT broker: 0
+2026-06-03 18:36:31,561 [INFO] Subscribed to topic: sensors/data
+2026-06-03 18:36:51,162 [INFO] No anomalies detected
+2026-06-03 18:36:56,161 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:36:56,162 [WARNING] EVENT {"type": "wifi_reconnected", "connection_time_ms": 8328}
+2026-06-03 18:37:02,963 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:37:02,964 [WARNING] EVENT {"type": "motion_detected", "delta": 39.600000000000136, "value": 645}
+2026-06-03 18:37:06,311 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:37:06,311 [WARNING] EVENT {"type": "motion_detected", "delta": 31.680000000000177, "value": 645}
+2026-06-03 18:37:11,318 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:37:11,319 [WARNING] EVENT {"type": "motion_detected", "delta": 46.344000000000165, "value": 624}
+2026-06-03 18:37:16,332 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:37:16,332 [WARNING] EVENT {"type": "motion_detected", "delta": 40.07520000000022, "value": 621}
+2026-06-03 18:37:21,345 [INFO] No anomalies detected
+2026-06-03 18:37:26,359 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:37:26,359 [WARNING] EVENT {"type": "motion_detected", "delta": 20.1518719999998, "value": 676}
+2026-06-03 18:37:31,373 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:37:31,374 [WARNING] EVENT {"type": "motion_detected", "delta": 31.12149759999977, "value": 691}
+2026-06-03 18:37:36,386 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:37:36,387 [WARNING] EVENT {"type": "motion_detected", "delta": 29.897198079999725, "value": 696}
+2026-06-03 18:37:41,295 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:37:41,296 [WARNING] EVENT {"type": "motion_detected", "delta": 28.91775846399969, "value": 701}
+2026-06-03 18:37:46,413 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:37:46,414 [WARNING] EVENT {"type": "motion_detected", "delta": 25.13420677119973, "value": 703}
+2026-06-03 18:37:51,322 [INFO] No anomalies detected
+2026-06-03 18:37:56,454 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:37:56,455 [WARNING] EVENT {"type": "motion_detected", "delta": 20.885892333567654, "value": 705}
+2026-06-03 18:38:01,456 [INFO] No anomalies detected
+2026-06-03 18:38:06,468 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:38:06,469 [WARNING] EVENT {"type": "motion_detected", "delta": 23.966971093483266, "value": 716}
+2026-06-03 18:38:11,483 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:38:11,484 [WARNING] EVENT {"type": "motion_detected", "delta": 28.17357687478659, "value": 725}
+2026-06-03 18:38:16,370 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:38:16,371 [WARNING] EVENT {"type": "motion_detected", "delta": 29.538861499829295, "value": 732}
+2026-06-03 18:38:21,518 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:38:21,519 [WARNING] EVENT {"type": "motion_detected", "delta": 24.63108919986348, "value": 733}
+2026-06-03 18:38:26,522 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:38:26,523 [WARNING] EVENT {"type": "motion_detected", "delta": 24.704871359890717, "value": 738}
+2026-06-03 18:38:31,224 [INFO] No anomalies detected
+2026-06-03 18:38:36,235 [INFO] No anomalies detected
+2026-06-03 18:38:41,250 [INFO] No anomalies detected
+2026-06-03 18:38:46,262 [INFO] No anomalies detected
+2026-06-03 18:38:51,260 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:38:51,261 [WARNING] EVENT {"type": "motion_detected", "delta": 22.66950775279122, "value": 703}
+2026-06-03 18:39:00,409 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:39:00,410 [WARNING] EVENT {"type": "motion_detected", "delta": 21.13560620223302, "value": 700}
+2026-06-03 18:39:01,304 [INFO] No anomalies detected
+2026-06-03 18:39:06,317 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:39:06,317 [WARNING] EVENT {"type": "motion_detected", "delta": 23.126787969429188, "value": 692}
+2026-06-03 18:39:11,331 [INFO] No anomalies detected
+2026-06-03 18:39:16,344 [INFO] No anomalies detected
+2026-06-03 18:39:21,358 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:39:21,358 [WARNING] EVENT {"type": "motion_detected", "delta": 24.55908455965232, "value": 741}
+2026-06-03 18:39:26,371 [INFO] No anomalies detected
+2026-06-03 18:39:31,385 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:39:31,386 [WARNING] EVENT {"type": "motion_detected", "delta": 36.48218588182249, "value": 688}
+2026-06-03 18:39:36,398 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:39:36,399 [WARNING] EVENT {"type": "motion_detected", "delta": 39.18574870545808, "value": 678}
+2026-06-03 18:39:41,412 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:39:41,413 [WARNING] EVENT {"type": "motion_detected", "delta": 28.348598964366488, "value": 681}
+2026-06-03 18:39:46,322 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:39:46,322 [WARNING] EVENT {"type": "motion_detected", "delta": 20.678879171493236, "value": 683}
+2026-06-03 18:39:51,439 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:39:51,440 [WARNING] EVENT {"type": "motion_detected", "delta": 23.45689666280532, "value": 723}
+2026-06-03 18:39:56,348 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:39:56,349 [WARNING] EVENT {"type": "motion_detected", "delta": 22.765517330244165, "value": 727}
+2026-06-03 18:40:01,467 [INFO] No anomalies detected
+2026-06-03 18:40:06,480 [WARNING] ANOMALY EVENTS DETECTED
+2026-06-03 18:40:06,480 [WARNING] EVENT {"type": "motion_detected", "delta": 327.76993109135617, "value": 1036}
+2026-06-03 18:40:06,481 [WARNING] EVENT {"type": "light_anomaly", "delta": 327.76993109135617, "value": 1036}

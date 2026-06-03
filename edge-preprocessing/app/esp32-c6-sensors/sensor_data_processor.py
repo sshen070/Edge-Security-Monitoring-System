@@ -29,7 +29,7 @@ detector = AnomalyDetector(config)
 
 MQTT_BROKER = "mosquitto"
 MQTT_PORT = 1883
-MQTT_TOPIC = "sensors/esp32c6"
+MQTT_TOPIC = "sensors/data"
 
 def on_connect(client, userdata, flags, rc):
     logging.info(f"Connected to MQTT broker: {rc}")

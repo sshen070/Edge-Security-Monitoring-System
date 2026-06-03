@@ -1,7 +1,7 @@
 {
-  "light_threshold": 300,
+  "light_threshold": 50,
   "rssi_threshold": -75,
-  "motion_threshold": 100,
+  "motion_threshold": 20,
   "motion_cooldown_seconds": 2,
   "moving_average_alpha": 0.2
 }
