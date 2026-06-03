@@ -9,7 +9,6 @@ void initSensors() {
   pinMode(LIGHT_PIN, INPUT);
 }
 
-
 // Call this AFTER WiFi connects
 void markConnectionStart() {
   connectionStartTime = millis();

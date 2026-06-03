@@ -151,17 +151,11 @@ void connectMQTT() {
     } 
     
     else {
-<<<<<<< HEAD
-      // Debug details
-      Serial.printf("MQTT SERVER: %s\n", MQTT_SERVER);
-      Serial.printf("WIFI RSSI: %d\n", WiFi.RSSI());
-=======
       // Debug Info
       Serial.print("MQTT Server: \n");
       Serial.println(MQTT_SERVER);
       Serial.print("WIFI RSSI: \n");
       Serial.println(WiFi.RSSI());
->>>>>>> 288a239 (Implemnted esp32c6 data transmission using MQTT)
       
       Serial.print("MQTT failed, rc=");
       Serial.print(mqttClient.state());
