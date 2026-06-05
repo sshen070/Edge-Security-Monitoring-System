@@ -2,6 +2,8 @@
 //#include "config.h"
 
 #include <WiFi.h>
+#include <ArduinoJson.h>
+
 
 static uint32_t connectionStartTime = 0;
 
@@ -17,6 +19,8 @@ void markConnectionStart() {
 SensorData readSensors() {
 
   SensorData data;
+
+  data.device_id = "esp32-c6";
 
   // Light & motion read
   data.light = analogRead(LIGHT_PIN);
@@ -39,29 +43,15 @@ SensorData readSensors() {
 }
 
 String buildPayload(const SensorData &data) {
+  StaticJsonDocument<256> doc;
 
-  String payload = "{";
+  doc["device_id"] = data.device_id;
+  doc["light"] = data.light;
+  doc["rssi"] = data.rssi;
+  doc["uptime_ms"] = data.uptime;
+  doc["connection_time_ms"] = data.connection_time_ms;
 
-  payload += "\"light\":";
-  payload += String(data.light);
-  payload += ",";
-
-//  payload += "\"temperature\":";
-//  payload += String(data.temperature, 1);
-//  payload += ",";
-
-  payload += "\"rssi\":";
-  payload += String(data.rssi);
-  payload += ",";
-
-  payload += "\"uptime_ms\":";
-  payload += String(data.uptime);
-  payload += ",";
-
-  payload += "\"connection_time_ms\":";
-  payload += String(data.connection_time_ms);
-
-  payload += "}";
-
-  return payload;
+  String output;
+  serializeJson(doc, output);
+  return output;
 }

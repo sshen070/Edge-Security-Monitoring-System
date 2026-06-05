@@ -7,6 +7,7 @@ const int LIGHT_PIN = A0;
 
 struct SensorData {
 
+  String device_id;
 //  float temperature;
   int light;
 //  bool motion;

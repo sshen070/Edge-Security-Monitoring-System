@@ -8,6 +8,7 @@ import httpx
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
+from fastapi import APIRouter
 
 from app import cloud_client
 from app.database import db_session, init_db, row_to_device, row_to_reading, utc_now_iso
@@ -857,6 +858,12 @@ def list_sensor_readings(device_id: str, limit: int = Query(default=100, ge=1, l
             (device_id, limit),
         ).fetchall()
         return [row_to_reading(row) for row in rows]
+        
+
+@app.post("/api/sensors/{device_id}/anomalies")
+def add_anomaly(device_id: str, payload: dict):
+    print("ANOMALY RECEIVED:", device_id, payload)
+    return {"status": "ok"}
 
 
 @app.delete("/api/sensors/{device_id}/readings", status_code=status.HTTP_204_NO_CONTENT)

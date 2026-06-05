@@ -40,52 +40,83 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe(MQTT_TOPIC)
     logging.info(f"Subscribed to topic: {MQTT_TOPIC}")
 
-
 def on_message(client, userdata, msg):
     try:
-        # Convert data into usable format
-        payload = msg.payload.decode("utf-8")
-        data = json.loads(payload)
+        payload = msg.payload.decode("utf-8").strip()
+
+        try:
+            data = json.loads(payload)
+        except json.JSONDecodeError:
+            logging.error(f"Bad MQTT payload: {payload}")
+            return
 
         logging.debug(f"Received sensor data: {data}")
+
         events = detector.detect(data)
 
+        device_id = data.get("device_id") or data.get("id") or "unknown-device"
+
+        # Forward anomaly events
         if events:
             logging.warning("ANOMALY EVENTS DETECTED")
-            
+
             for event in events:
-                logging.warning(
-                    "EVENT %s",
-                    json.dumps(event)
-                )
-                # Forward event to Jetson gateway if configured. Use device_id from data or fallback.
+                logging.warning("EVENT %s", json.dumps(event))
+
                 try:
                     if GATEWAY_URL:
-                        device_id = data.get("device_id") or data.get("id") or "unknown-device"
-                        post_url = f"{GATEWAY_URL.rstrip('/')}/api/sensors/{requests.utils.requote_uri(device_id)}/readings"
+                        post_url = (
+                            f"{GATEWAY_URL.rstrip('/')}"
+                            f"/api/sensors/{requests.utils.requote_uri(device_id)}/anomalies"
+                        )
+
                         headers = {}
                         if GATEWAY_API_KEY:
                             headers["X-API-Key"] = GATEWAY_API_KEY
-                        # send the event as the reading payload to the gateway
-                        resp = requests.post(post_url, json={"reading": event}, headers=headers, timeout=5)
+
+                        resp = requests.post(
+                            post_url,
+                            json={"event": event},
+                            headers=headers,
+                            timeout=5
+                        )
+
                         if not resp.ok:
-                            logging.warning(f"Gateway POST failed: {resp.status_code} {resp.text}")
+                            logging.warning(
+                                f"Gateway anomaly POST failed: {resp.status_code} {resp.text}"
+                            )
+
                 except Exception:
                     logging.exception("Failed to forward event to gateway")
+
         else:
             logging.info("No anomalies detected")
 
-        # Always forward the raw data reading to the gateway (if configured) for dashboard and history.
+
+        # Forward raw readings
         try:
             if GATEWAY_URL:
-                device_id = data.get("device_id") or data.get("id") or "unknown-device"
-                post_url = f"{GATEWAY_URL.rstrip('/')}/api/sensors/{requests.utils.requote_uri(device_id)}/readings"
+                post_url = (
+                    f"{GATEWAY_URL.rstrip('/')}"
+                    f"/api/sensors/{requests.utils.requote_uri(device_id)}/readings"
+                )
+
                 headers = {}
                 if GATEWAY_API_KEY:
                     headers["X-API-Key"] = GATEWAY_API_KEY
-                resp = requests.post(post_url, json={"reading": data}, headers=headers, timeout=5)
+
+                resp = requests.post(
+                    post_url,
+                    json={"reading": data},
+                    headers=headers,
+                    timeout=5
+                )
+
                 if not resp.ok:
-                    logging.warning(f"Gateway POST failed: {resp.status_code} {resp.text}")
+                    logging.warning(
+                        f"Gateway reading POST failed: {resp.status_code} {resp.text}"
+                    )
+
         except Exception:
             logging.exception("Failed to forward raw reading to gateway")
 
