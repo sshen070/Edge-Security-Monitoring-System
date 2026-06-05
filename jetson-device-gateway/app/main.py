@@ -469,16 +469,29 @@ def register_device(body: DeviceRegister, source_ip: ClientIp) -> dict:
                 now,
             ),
         )
-        row = db.execute("SELECT * FROM devices WHERE device_id = ?", (body.device_id,)).fetchone()
-f        device = row_to_device(row)
+        row = db.execute(
+            "SELECT * FROM devices WHERE device_id = ?",
+            (body.device_id,),
+        ).fetchone()
 
-    cloud_client.register_device(device["device_id"], device["device_type"])
+        device = row_to_device(row)
+
+    cloud_client.register_device(
+        device["device_id"],
+        device["device_type"]
+    )
+
     if cloud_client.is_camera_device(device["device_type"]):
         cloud_client.forward_camera_status(
             device["device_id"],
             device["device_type"],
-            {"online": True, "ip": device.get("ip"), "firmware": device.get("firmware")},
+            {
+                "online": True,
+                "ip": device.get("ip"),
+                "firmware": device.get("firmware"),
+            },
         )
+
     return device
 
 
