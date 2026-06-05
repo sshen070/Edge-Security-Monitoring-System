@@ -20,4 +20,9 @@ services:
     restart: unless-stopped
     volumes:
       - ./esp32-c6-sensors/logs:/app/logs
+    environment:
+      # Set GATEWAY_URL to point at the Jetson gateway (override this on the host or with an .env file).
+      # Default uses host.docker.internal (Docker Desktop). On Jetson use the Jetson IP e.g. http://10.42.0.1:8080
+      - GATEWAY_URL=${GATEWAY_URL:-http://host.docker.internal:8080}
+      - GATEWAY_API_KEY=${GATEWAY_API_KEY:-}
       

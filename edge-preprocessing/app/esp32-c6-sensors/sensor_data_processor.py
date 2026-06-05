@@ -33,6 +33,7 @@ MQTT_BROKER = "mosquitto"
 MQTT_PORT = 1883
 MQTT_TOPIC = "sensors/data"
 GATEWAY_URL = os.getenv("GATEWAY_URL", "")
+GATEWAY_API_KEY = os.getenv("GATEWAY_API_KEY", "").strip()
 
 def on_connect(client, userdata, flags, rc):
     logging.info(f"Connected to MQTT broker: {rc}")
@@ -62,8 +63,11 @@ def on_message(client, userdata, msg):
                     if GATEWAY_URL:
                         device_id = data.get("device_id") or data.get("id") or "unknown-device"
                         post_url = f"{GATEWAY_URL.rstrip('/')}/api/sensors/{requests.utils.requote_uri(device_id)}/readings"
+                        headers = {}
+                        if GATEWAY_API_KEY:
+                            headers["X-API-Key"] = GATEWAY_API_KEY
                         # send the event as the reading payload to the gateway
-                        resp = requests.post(post_url, json={"reading": event}, timeout=5)
+                        resp = requests.post(post_url, json={"reading": event}, headers=headers, timeout=5)
                         if not resp.ok:
                             logging.warning(f"Gateway POST failed: {resp.status_code} {resp.text}")
                 except Exception:
@@ -76,7 +80,10 @@ def on_message(client, userdata, msg):
             if GATEWAY_URL:
                 device_id = data.get("device_id") or data.get("id") or "unknown-device"
                 post_url = f"{GATEWAY_URL.rstrip('/')}/api/sensors/{requests.utils.requote_uri(device_id)}/readings"
-                resp = requests.post(post_url, json={"reading": data}, timeout=5)
+                headers = {}
+                if GATEWAY_API_KEY:
+                    headers["X-API-Key"] = GATEWAY_API_KEY
+                resp = requests.post(post_url, json={"reading": data}, headers=headers, timeout=5)
                 if not resp.ok:
                     logging.warning(f"Gateway POST failed: {resp.status_code} {resp.text}")
         except Exception:
