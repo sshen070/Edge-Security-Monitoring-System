@@ -7,5 +7,7 @@ services:
     environment:
       DEVICE_REGISTRY_DB: /app/data/devices.db
       CAMERA_REQUEST_TIMEOUT: "10"
+      CLOUD_BACKEND_URL: ${CLOUD_BACKEND_URL:-http://127.0.0.1:8000}
+      CLOUD_API_KEY: ${CLOUD_API_KEY:-}
     volumes:
       - ./jetson-device-gateway/data:/app/data

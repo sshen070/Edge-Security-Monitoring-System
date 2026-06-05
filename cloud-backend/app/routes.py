@@ -7,7 +7,15 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Device, Event, utc_now
-from app.schemas import DeviceCreate, DeviceRead, EventCreate, EventRead, EventType
+from app.schemas import (
+    CameraLatestRead,
+    DeviceCreate,
+    DeviceRead,
+    EventCreate,
+    EventRead,
+    EventType,
+    SensorLatestRead,
+)
 
 router = APIRouter(prefix="/v1", tags=["v1"])
 
@@ -77,6 +85,49 @@ def list_events(
 
     events = query.limit(limit).all()
     return [EventRead.model_validate(e) for e in events]
+
+
+def _latest_events_by_device(db: Session, event_types: list[str]) -> list[Event]:
+    events = (
+        db.query(Event)
+        .filter(Event.event_type.in_(event_types))
+        .order_by(Event.received_at.desc())
+        .all()
+    )
+    seen: set[str] = set()
+    latest: list[Event] = []
+    for event in events:
+        if event.device_id in seen:
+            continue
+        seen.add(event.device_id)
+        latest.append(event)
+    return latest
+
+
+@router.get("/sensors/latest", response_model=list[SensorLatestRead])
+def latest_sensor_readings(db: DbSession):
+    rows = _latest_events_by_device(db, [EventType.SENSOR.value, EventType.ALERT.value])
+    return [
+        SensorLatestRead(
+            device_id=event.device_id,
+            reading=event.payload or {},
+            received_at=event.received_at,
+        )
+        for event in rows
+    ]
+
+
+@router.get("/cameras/latest", response_model=list[CameraLatestRead])
+def latest_camera_status(db: DbSession):
+    rows = _latest_events_by_device(db, [EventType.CAMERA_STATUS.value])
+    return [
+        CameraLatestRead(
+            device_id=event.device_id,
+            status=event.payload or {},
+            received_at=event.received_at,
+        )
+        for event in rows
+    ]
 
 
 @router.post("/events", response_model=EventRead, status_code=status.HTTP_201_CREATED)
