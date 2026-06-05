@@ -55,3 +55,15 @@ class EventRead(BaseModel):
     received_at: datetime
     summary: str | None
     payload: dict[str, Any]
+
+
+class SensorLatestRead(BaseModel):
+    device_id: str
+    reading: dict[str, Any]
+    received_at: datetime
+
+
+class CameraLatestRead(BaseModel):
+    device_id: str
+    status: dict[str, Any]
+    received_at: datetime

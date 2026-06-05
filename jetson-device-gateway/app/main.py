@@ -9,6 +9,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
 
+from app import cloud_client
 from app.database import db_session, init_db, row_to_device, row_to_reading, utc_now_iso
 from app.schemas import DeviceHeartbeat, DeviceRead, DeviceRegister, SensorReadingIn, SensorReadingOut
 
@@ -469,7 +470,16 @@ def register_device(body: DeviceRegister, source_ip: ClientIp) -> dict:
             ),
         )
         row = db.execute("SELECT * FROM devices WHERE device_id = ?", (body.device_id,)).fetchone()
-        return row_to_device(row)
+f        device = row_to_device(row)
+
+    cloud_client.register_device(device["device_id"], device["device_type"])
+    if cloud_client.is_camera_device(device["device_type"]):
+        cloud_client.forward_camera_status(
+            device["device_id"],
+            device["device_type"],
+            {"online": True, "ip": device.get("ip"), "firmware": device.get("firmware")},
+        )
+    return device
 
 
 @app.get("/api/devices", response_model=list[DeviceRead])
@@ -790,7 +800,10 @@ def ingest_sensor_reading(device_id: str, body: SensorReadingIn, source_ip: Clie
             (source_ip, now, now, device_id),
         )
         row = db.execute("SELECT * FROM sensor_readings WHERE id = ?", (cursor.lastrowid,)).fetchone()
-        return row_to_reading(row)
+        reading = row_to_reading(row)
+
+    cloud_client.forward_sensor_reading(device_id, body.reading)
+    return reading
 
 
 @app.get("/api/sensors", response_model=list[SensorReadingOut])
